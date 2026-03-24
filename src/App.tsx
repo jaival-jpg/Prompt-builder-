@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { 
   Home, FileText, Wand2, History, Settings as SettingsIcon, 
   Search, LayoutGrid, ChevronRight, ArrowRight, ArrowLeft, Shield, HelpCircle, 
-  Moon, Sun, Globe, Sparkles, LogOut, Check, Copy, Trash2, Info, Languages
+  Moon, Sun, Globe, Sparkles, LogOut, Check, Copy, Trash2, Info, Languages,
+  MoreVertical, Share2, Pin, Undo, Redo, Edit2, X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { GoogleGenAI } from '@google/genai';
@@ -24,6 +25,7 @@ export default function App() {
     } catch (e) { return []; }
   });
   const [editData, setEditData] = useState<any>(null);
+  const [editingNote, setEditingNote] = useState<any>(null);
 
   useEffect(() => {
     localStorage.setItem('prompt_history', JSON.stringify(history));
@@ -53,8 +55,8 @@ export default function App() {
     <div className={`min-h-screen bg-[#05030A] text-white font-sans selection:bg-purple-500/30 font-inter ${theme === 'light' ? 'light-theme' : ''}`}>
       <AnimatePresence mode="wait">
         {currentTab === 'home' && <HomePage key="home" setCurrentTab={setCurrentTab} history={history} t={t} />}
-        {currentTab === 'notes' && <NotesPage key="notes" history={history} setHistory={setHistory} t={t} />}
-        {currentTab === 'builder' && <BuilderPage key="builder" setCurrentTab={setCurrentTab} history={history} setHistory={setHistory} editData={editData} setEditData={setEditData} t={t} />}
+        {currentTab === 'notes' && <NotesPage key="notes" history={history} setHistory={setHistory} editingNote={editingNote} setEditingNote={setEditingNote} t={t} />}
+        {currentTab === 'builder' && <BuilderPage key="builder" setCurrentTab={setCurrentTab} history={history} setHistory={setHistory} editData={editData} setEditData={setEditData} setEditingNote={setEditingNote} t={t} />}
         {currentTab === 'history' && <HistoryPage key="history" history={history} onEdit={handleEdit} onDelete={handleDelete} t={t} />}
         {currentTab === 'settings' && <SettingsPage key="settings" theme={theme} setTheme={setTheme} language={language} setLanguage={setLanguage} setCurrentTab={setCurrentTab} t={t} />}
         {currentTab === 'about' && <AboutPage key="about" setCurrentTab={setCurrentTab} t={t} />}
@@ -96,9 +98,13 @@ const BottomNav = ({ currentTab, setCurrentTab, t }: { currentTab: string, setCu
       <div className="relative -top-5">
         <button 
           onClick={() => setCurrentTab('builder')}
-          className={`p-4 rounded-full bg-gradient-to-br from-[#8B5CF6] to-[#3B82F6] shadow-lg shadow-purple-500/30 text-white transition-transform hover:scale-105 active:scale-95 ${currentTab === 'builder' ? 'ring-4 ring-purple-500/30' : ''}`}
+          className={`rounded-full shadow-[0_0_25px_rgba(139,92,246,0.6)] transition-transform hover:scale-105 active:scale-95 ${currentTab === 'builder' ? 'ring-4 ring-purple-500/50' : ''}`}
         >
-          <Wand2 size={24} className={currentTab === 'builder' ? 'animate-pulse' : ''} />
+          <img 
+            src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhiP8PtPcn_lYed8oigp1S0lt3qnSwtz0ifjHgxc3iKF01mdzKLRtm5Bq8gjxQd4-j69avgRw_AmPYyonScYLVsoXQ0tYn-AyRfnRGPEaoVcCucFH6M6j_gLA7pbPkbEfP2mv6qEkoI4I07ZDs-b_dnX85SgV4qM2lIekCWSJeilBojFT1x7vpVD5VTR5D2/s1120/45435.png" 
+            alt="Create Prompt" 
+            className={`w-14 h-14 object-cover rounded-full ${currentTab === 'builder' ? 'animate-pulse' : ''}`} 
+          />
         </button>
       </div>
 
@@ -129,8 +135,8 @@ const HomePage = ({ setCurrentTab, history, t }: { setCurrentTab: (tab: string) 
       <div className="absolute top-6 right-6 text-purple-400/40 group-hover:text-purple-400/60 transition-colors">
         <Sparkles size={32} strokeWidth={1.5} />
       </div>
-      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#8B5CF6] to-[#3B82F6] flex items-center justify-center mb-5 shadow-lg shadow-purple-500/40">
-        <Wand2 size={22} className="text-white" />
+      <div className="w-12 h-12 rounded-full flex items-center justify-center mb-5 shadow-[0_0_15px_rgba(139,92,246,0.4)] overflow-hidden">
+        <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhiP8PtPcn_lYed8oigp1S0lt3qnSwtz0ifjHgxc3iKF01mdzKLRtm5Bq8gjxQd4-j69avgRw_AmPYyonScYLVsoXQ0tYn-AyRfnRGPEaoVcCucFH6M6j_gLA7pbPkbEfP2mv6qEkoI4I07ZDs-b_dnX85SgV4qM2lIekCWSJeilBojFT1x7vpVD5VTR5D2/s1120/45435.png" alt="Robot" className="w-full h-full object-cover rounded-full" />
       </div>
       <h2 className="text-2xl font-bold text-white mb-2">Create Prompt</h2>
       <p className="text-gray-400 text-sm mb-6 max-w-[85%] leading-relaxed">Use our step-by-step wizard to generate a highly optimized prompt for any AI.</p>
@@ -179,11 +185,32 @@ const HomePage = ({ setCurrentTab, history, t }: { setCurrentTab: (tab: string) 
   </motion.div>
 );
 
-const NotesPage = ({ history, setHistory, t }: { history: any[], setHistory: any, t: any }) => {
-  const [editingNote, setEditingNote] = useState<any>(null);
+const NotesPage = ({ history, setHistory, editingNote, setEditingNote, t }: { history: any[], setHistory: any, editingNote: any, setEditingNote: any, t: any }) => {
   const [searchQuery, setSearchQuery] = useState('');
+  const [fontSize, setFontSize] = useState('text-base');
+  const [showMenu, setShowMenu] = useState(false);
+  const [undoStack, setUndoStack] = useState<string[]>([]);
+  const [redoStack, setRedoStack] = useState<string[]>([]);
 
-  const handleUpdateNote = (id: number, field: 'topic' | 'prompt', value: string) => {
+  // Reset stacks when opening a new note
+  useEffect(() => {
+    if (editingNote) {
+      setUndoStack([]);
+      setRedoStack([]);
+    }
+  }, [editingNote?.id]);
+
+  const handleUpdateNote = (id: number, field: 'topic' | 'prompt' | 'isPinned', value: any) => {
+    if (field === 'prompt' && editingNote) {
+      setUndoStack(prev => {
+        if (prev.length === 0 || prev[prev.length - 1] !== editingNote.prompt) {
+          return [...prev, editingNote.prompt];
+        }
+        return prev;
+      });
+      setRedoStack([]);
+    }
+
     const updatedHistory = history.map((item: any) => 
       item.id === id ? { ...item, [field]: value } : item
     );
@@ -191,46 +218,138 @@ const NotesPage = ({ history, setHistory, t }: { history: any[], setHistory: any
     setEditingNote((prev: any) => ({ ...prev, [field]: value }));
   };
 
+  const handleUndo = () => {
+    if (undoStack.length > 0 && editingNote) {
+      const previousText = undoStack[undoStack.length - 1];
+      setRedoStack(prev => [editingNote.prompt, ...prev]);
+      setUndoStack(prev => prev.slice(0, -1));
+      
+      const updatedHistory = history.map((item: any) => 
+        item.id === editingNote.id ? { ...item, prompt: previousText } : item
+      );
+      setHistory(updatedHistory);
+      setEditingNote((prev: any) => ({ ...prev, prompt: previousText }));
+    }
+  };
+
+  const handleRedo = () => {
+    if (redoStack.length > 0 && editingNote) {
+      const nextText = redoStack[0];
+      setUndoStack(prev => [...prev, editingNote.prompt]);
+      setRedoStack(prev => prev.slice(1));
+      
+      const updatedHistory = history.map((item: any) => 
+        item.id === editingNote.id ? { ...item, prompt: nextText } : item
+      );
+      setHistory(updatedHistory);
+      setEditingNote((prev: any) => ({ ...prev, prompt: nextText }));
+    }
+  };
+
   const filteredHistory = history.filter((item: any) => 
     item.topic.toLowerCase().includes(searchQuery.toLowerCase()) || 
     item.prompt.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  ).sort((a: any, b: any) => {
+    if (a.isPinned && !b.isPinned) return -1;
+    if (!a.isPinned && b.isPinned) return 1;
+    return 0;
+  });
 
   const DOT_COLORS = ['bg-[#FF3B6A]', 'bg-[#3B82F6]', 'bg-[#A855F7]', 'bg-[#EAB308]', 'bg-[#22C55E]', 'bg-[#06B6D4]'];
 
   if (editingNote) {
     return (
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="fixed inset-0 z-[60] flex flex-col bg-[#05030A] p-4">
-        <div className="flex items-center justify-between mb-6 mt-2">
-          <button onClick={() => setEditingNote(null)} className="p-2 bg-[#161423] rounded-full hover:bg-white/10 transition-colors">
-            <ArrowLeft size={20} className="text-white" />
-          </button>
-          <div className="flex gap-2">
-            <button 
-              onClick={() => {
-                navigator.clipboard.writeText(editingNote.prompt);
-              }} 
-              className="p-2 bg-[#161423] rounded-full hover:bg-white/10 transition-colors"
-            >
-              <Copy size={20} className="text-gray-400" />
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="fixed inset-0 z-[60] flex flex-col bg-[#121212]">
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 py-4 bg-[#2E1065] border-b border-white/5">
+          <div className="flex items-center gap-4 flex-1">
+            <button onClick={() => setEditingNote(null)} className="hover:bg-white/10 p-1 rounded-full transition-colors">
+              <ArrowLeft size={24} className="text-white" />
             </button>
+            <input 
+              type="text" 
+              value={editingNote.topic}
+              onChange={(e) => handleUpdateNote(editingNote.id, 'topic', e.target.value)}
+              placeholder="Note Title"
+              className="bg-transparent text-white font-medium text-lg focus:outline-none placeholder-gray-500 w-full"
+            />
+          </div>
+          <div className="relative ml-2">
+            <button onClick={() => setShowMenu(!showMenu)} className="hover:bg-white/10 p-1 rounded-full transition-colors">
+              <MoreVertical size={24} className="text-white" />
+            </button>
+            {showMenu && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setShowMenu(false)}></div>
+                <div className="absolute right-0 top-full mt-2 w-48 bg-[#2a2a2a] rounded-xl shadow-xl border border-white/10 overflow-hidden z-50">
+                  <button 
+                    onClick={() => {
+                      if (navigator.share) {
+                        navigator.share({
+                          title: editingNote.topic,
+                          text: editingNote.prompt,
+                        }).catch(console.error);
+                      }
+                      setShowMenu(false);
+                    }}
+                    className="w-full text-left px-4 py-3 text-white hover:bg-white/5 flex items-center gap-3 text-sm"
+                  >
+                    <Share2 size={16} /> Share
+                  </button>
+                  <div className="px-4 py-3 border-t border-white/5">
+                    <div className="text-xs text-gray-400 mb-2">Font Size</div>
+                    <div className="flex justify-between gap-1">
+                      <button onClick={() => setFontSize('text-sm')} className={`p-1.5 rounded flex-1 flex justify-center items-center ${fontSize === 'text-sm' ? 'bg-blue-500/20 text-blue-400' : 'bg-white/5 text-gray-300 hover:bg-white/10'}`}><span className="text-sm">A</span></button>
+                      <button onClick={() => setFontSize('text-base')} className={`p-1.5 rounded flex-1 flex justify-center items-center ${fontSize === 'text-base' ? 'bg-blue-500/20 text-blue-400' : 'bg-white/5 text-gray-300 hover:bg-white/10'}`}><span className="text-base">A</span></button>
+                      <button onClick={() => setFontSize('text-lg')} className={`p-1.5 rounded flex-1 flex justify-center items-center ${fontSize === 'text-lg' ? 'bg-blue-500/20 text-blue-400' : 'bg-white/5 text-gray-300 hover:bg-white/10'}`}><span className="text-lg">A</span></button>
+                      <button onClick={() => setFontSize('text-xl')} className={`p-1.5 rounded flex-1 flex justify-center items-center ${fontSize === 'text-xl' ? 'bg-blue-500/20 text-blue-400' : 'bg-white/5 text-gray-300 hover:bg-white/10'}`}><span className="text-xl">A</span></button>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </div>
         
-        <input 
-          type="text" 
-          value={editingNote.topic}
-          onChange={(e) => handleUpdateNote(editingNote.id, 'topic', e.target.value)}
-          placeholder="Title"
-          className="bg-transparent text-white font-semibold text-2xl mb-4 focus:outline-none placeholder-gray-600"
-        />
-        
+        {/* Editor Area */}
         <textarea 
           value={editingNote.prompt}
           onChange={(e) => handleUpdateNote(editingNote.id, 'prompt', e.target.value)}
           placeholder="Note content..."
-          className="flex-1 w-full bg-transparent text-gray-300 text-sm resize-none focus:outline-none font-['Inter',_sans-serif] leading-relaxed pb-6"
+          className={`flex-1 w-full bg-transparent text-gray-200 ${fontSize} resize-none focus:outline-none font-['Inter',_sans-serif] leading-relaxed p-5`}
         />
+
+        {/* Bottom Toolbar */}
+        <div className="flex items-center justify-between px-6 py-4 bg-[#1e1e1e] border-t border-white/5">
+          <div className="flex gap-4">
+            <button 
+              onClick={() => handleUpdateNote(editingNote.id, 'isPinned', !editingNote.isPinned)}
+              className={`p-3 rounded-full transition-colors ${editingNote.isPinned ? 'bg-purple-500/20 text-purple-400' : 'bg-[#2a2a2a] hover:bg-[#333] text-gray-300'}`}
+            >
+              <Pin size={20} className={editingNote.isPinned ? "fill-current" : ""} />
+            </button>
+            <button 
+              onClick={handleUndo}
+              disabled={undoStack.length === 0}
+              className={`p-3 rounded-full transition-colors ${undoStack.length === 0 ? 'bg-[#2a2a2a]/50 text-gray-600 cursor-not-allowed' : 'bg-[#2a2a2a] hover:bg-[#333] text-gray-300'}`}
+            >
+              <Undo size={20} />
+            </button>
+            <button 
+              onClick={handleRedo}
+              disabled={redoStack.length === 0}
+              className={`p-3 rounded-full transition-colors ${redoStack.length === 0 ? 'bg-[#2a2a2a]/50 text-gray-600 cursor-not-allowed' : 'bg-[#2a2a2a] hover:bg-[#333] text-gray-300'}`}
+            >
+              <Redo size={20} />
+            </button>
+          </div>
+          <button 
+            onClick={() => navigator.clipboard.writeText(editingNote.prompt)}
+            className="p-3 rounded-full bg-[#2a2a2a] hover:bg-[#333] transition-colors text-gray-300"
+          >
+            <Copy size={20} />
+          </button>
+        </div>
       </motion.div>
     );
   }
@@ -239,8 +358,8 @@ const NotesPage = ({ history, setHistory, t }: { history: any[], setHistory: any
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="p-6 pb-32 min-h-screen bg-[#05030A]">
       <header className="flex items-center justify-between mb-8 mt-2">
         <h1 className="text-[28px] font-bold text-white tracking-wide">Prompt Notes</h1>
-        <div className="w-10 h-10 rounded-full flex items-center justify-center bg-gradient-to-br from-[#8B5CF6] to-[#3B82F6] shadow-lg shadow-purple-500/20">
-          <Wand2 size={20} className="text-white" />
+        <div className="w-10 h-10 rounded-full flex items-center justify-center shadow-[0_0_10px_rgba(139,92,246,0.3)] overflow-hidden">
+          <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhiP8PtPcn_lYed8oigp1S0lt3qnSwtz0ifjHgxc3iKF01mdzKLRtm5Bq8gjxQd4-j69avgRw_AmPYyonScYLVsoXQ0tYn-AyRfnRGPEaoVcCucFH6M6j_gLA7pbPkbEfP2mv6qEkoI4I07ZDs-b_dnX85SgV4qM2lIekCWSJeilBojFT1x7vpVD5VTR5D2/s1120/45435.png" alt="Robot" className="w-full h-full object-cover rounded-full" />
         </div>
       </header>
 
@@ -323,12 +442,13 @@ const GradientTextarea = ({ value, onChange, placeholder, className = "min-h-[15
   </div>
 );
 
-const BuilderPage = ({ setCurrentTab, history, setHistory, editData, setEditData, t }: any) => {
+const BuilderPage = ({ setCurrentTab, history, setHistory, editData, setEditData, setEditingNote, t }: any) => {
   const [step, setStep] = useState(1);
   const totalSteps = 8;
   const [copied, setCopied] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedPrompt, setGeneratedPrompt] = useState('');
+  const [generatedNoteId, setGeneratedNoteId] = useState<number | null>(null);
 
   const initialFormData = {
     appName: '',
@@ -419,6 +539,7 @@ const BuilderPage = ({ setCurrentTab, history, setHistory, editData, setEditData
           formData: formData
         };
         setHistory([newHistoryItem, ...history]);
+        setGeneratedNoteId(newHistoryItem.id);
       } catch (error) {
         console.error("Error generating prompt:", error);
         setGeneratedPrompt("An error occurred while generating the prompt. Please try again.");
@@ -438,8 +559,8 @@ const BuilderPage = ({ setCurrentTab, history, setHistory, editData, setEditData
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="p-6 pb-32 min-h-screen flex flex-col">
       <header className="flex items-center mb-8 mt-4">
-        <div className="w-10 h-10 rounded-full bg-purple-500/10 flex items-center justify-center mr-4 text-purple-400">
-          <Wand2 size={20} />
+        <div className="w-10 h-10 rounded-full flex items-center justify-center mr-4 shadow-[0_0_10px_rgba(139,92,246,0.3)] overflow-hidden">
+          <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhiP8PtPcn_lYed8oigp1S0lt3qnSwtz0ifjHgxc3iKF01mdzKLRtm5Bq8gjxQd4-j69avgRw_AmPYyonScYLVsoXQ0tYn-AyRfnRGPEaoVcCucFH6M6j_gLA7pbPkbEfP2mv6qEkoI4I07ZDs-b_dnX85SgV4qM2lIekCWSJeilBojFT1x7vpVD5VTR5D2/s1120/45435.png" alt="Robot" className="w-full h-full object-cover rounded-full" />
         </div>
         <div>
           <h1 className="text-2xl font-bold text-white tracking-tight">Builder</h1>
@@ -714,26 +835,46 @@ const BuilderPage = ({ setCurrentTab, history, setHistory, editData, setEditData
             </div>
 
             {!isGenerating && (
-              <motion.button
+              <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                onClick={() => {
-                  navigator.clipboard.writeText(generatedPrompt);
-                  setCopied(true);
-                  setTimeout(() => setCopied(false), 2000);
-                }}
-                className={`w-full py-4 rounded-2xl font-bold text-white shadow-lg flex items-center justify-center transition-all active:scale-[0.98] ${
-                  copied 
-                    ? 'bg-gradient-to-r from-green-500 to-emerald-600 shadow-green-900/20' 
-                    : 'bg-gradient-to-r from-[#8B5CF6] to-[#3B82F6] shadow-purple-900/20 hover:shadow-purple-500/40'
-                }`}
+                className="flex gap-3"
               >
-                {copied ? (
-                  <><Check size={20} className="mr-2" /> Copied to Clipboard!</>
-                ) : (
-                  <><Copy size={20} className="mr-2" /> Copy Prompt</>
-                )}
-              </motion.button>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(generatedPrompt);
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 2000);
+                  }}
+                  className={`flex-1 py-4 rounded-2xl font-bold text-white shadow-lg flex items-center justify-center transition-all active:scale-[0.98] ${
+                    copied 
+                      ? 'bg-gradient-to-r from-green-500 to-emerald-600 shadow-green-900/20' 
+                      : 'bg-gradient-to-r from-[#8B5CF6] to-[#3B82F6] shadow-purple-900/20 hover:shadow-purple-500/40'
+                  }`}
+                >
+                  {copied ? (
+                    <><Check size={20} className="mr-2" /> Copied!</>
+                  ) : (
+                    <><Copy size={20} className="mr-2" /> Copy Prompt</>
+                  )}
+                </button>
+                <button
+                  onClick={() => {
+                    if (generatedNoteId) {
+                      const noteToEdit = history.find(h => h.id === generatedNoteId) || {
+                        id: generatedNoteId,
+                        topic: formData.appName || formData.topic || 'Untitled App',
+                        prompt: generatedPrompt
+                      };
+                      setEditingNote(noteToEdit);
+                      setCurrentTab('notes');
+                    }
+                  }}
+                  className="px-6 py-4 rounded-2xl font-bold text-white shadow-lg flex items-center justify-center transition-all active:scale-[0.98] bg-[#161423] hover:bg-[#1C1A2D] border border-white/10"
+                >
+                  <FileText size={20} className="mr-2" /> Edit
+                </button>
+              </motion.div>
             )}
           </motion.div>
         )}
@@ -822,6 +963,10 @@ const HistoryPage = ({ history, onEdit, onDelete, t }: any) => (
 );
 
 const SettingsPage = ({ theme, setTheme, language, setLanguage, setCurrentTab, t }: any) => {
+  const [name, setName] = useState(() => localStorage.getItem('userName') || 'Jaival Pandya');
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [tempName, setTempName] = useState(name);
+
   const toggleTheme = () => setTheme(theme === 'dark' ? 'light' : 'dark');
   
   const cycleLanguage = () => {
@@ -830,7 +975,15 @@ const SettingsPage = ({ theme, setTheme, language, setLanguage, setCurrentTab, t
     setLanguage(langs[nextIndex]);
   };
 
+  const handleSaveName = () => {
+    setName(tempName);
+    localStorage.setItem('userName', tempName);
+    setIsEditingName(false);
+  };
+
   const langDisplay: any = { en: 'English', es: 'Español', fr: 'Français' };
+
+  const initials = name.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase();
 
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="p-6 pb-32">
@@ -843,10 +996,15 @@ const SettingsPage = ({ theme, setTheme, language, setLanguage, setCurrentTab, t
 
       <div className="bg-[#120F1C] border border-white/5 rounded-[28px] p-5 mb-8 flex items-center shadow-lg shadow-black/20">
         <div className="w-14 h-14 rounded-full bg-gradient-to-br from-[#A78BFA] to-[#3B82F6] flex items-center justify-center text-lg font-bold text-white mr-4 shadow-inner">
-          JD
+          {initials}
         </div>
         <div>
-          <h2 className="text-lg font-bold text-white">John Doe</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-lg font-bold text-white">{name}</h2>
+            <button onClick={() => { setTempName(name); setIsEditingName(true); }} className="text-gray-400 hover:text-white transition-colors">
+              <Edit2 size={14} />
+            </button>
+          </div>
           <p className="text-gray-500 text-xs mt-0.5">Pro Member</p>
         </div>
       </div>
@@ -872,6 +1030,39 @@ const SettingsPage = ({ theme, setTheme, language, setLanguage, setCurrentTab, t
       <button className="w-full py-4 rounded-2xl bg-red-500/5 text-red-500 font-medium border border-red-500/10 flex items-center justify-center hover:bg-red-500/10 transition-colors">
         <LogOut size={18} className="mr-2" /> Sign Out
       </button>
+
+      <AnimatePresence>
+        {isEditingName && (
+          <motion.div 
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-6"
+          >
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-[#120F1C] border border-white/10 rounded-3xl p-6 w-full max-w-sm shadow-2xl"
+            >
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-bold text-white">Edit Name</h3>
+                <button onClick={() => setIsEditingName(false)} className="text-gray-400 hover:text-white">
+                  <X size={20} />
+                </button>
+              </div>
+              <textarea 
+                value={tempName}
+                onChange={(e) => setTempName(e.target.value)}
+                className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 resize-none h-24 mb-4"
+                placeholder="Enter your name"
+              />
+              <button 
+                onClick={handleSaveName}
+                className="w-full py-3 rounded-xl font-medium text-white bg-gradient-to-r from-[#5B21B6] to-[#3B82F6] shadow-lg shadow-blue-900/20"
+              >
+                Save Changes
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 };
@@ -886,8 +1077,8 @@ const AboutPage = ({ setCurrentTab, t }: any) => (
     </header>
 
     <div className="bg-[#120F1C] border border-white/5 rounded-[28px] p-8 mb-8 text-center shadow-lg shadow-black/20">
-      <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-[#8B5CF6] to-[#3B82F6] flex items-center justify-center mx-auto mb-6 shadow-xl shadow-purple-500/30">
-        <Wand2 size={36} className="text-white" />
+      <div className="w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-[0_0_20px_rgba(139,92,246,0.4)] overflow-hidden">
+        <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhiP8PtPcn_lYed8oigp1S0lt3qnSwtz0ifjHgxc3iKF01mdzKLRtm5Bq8gjxQd4-j69avgRw_AmPYyonScYLVsoXQ0tYn-AyRfnRGPEaoVcCucFH6M6j_gLA7pbPkbEfP2mv6qEkoI4I07ZDs-b_dnX85SgV4qM2lIekCWSJeilBojFT1x7vpVD5VTR5D2/s1120/45435.png" alt="Robot" className="w-full h-full object-cover rounded-3xl" />
       </div>
       <h2 className="text-2xl font-bold text-white mb-2">Prompt Builder</h2>
       <p className="text-gray-400 text-sm mb-6">Version 2.0.0</p>
@@ -905,6 +1096,7 @@ const AboutPage = ({ setCurrentTab, t }: any) => (
 
     <div className="text-center text-gray-600 text-xs">
       <p>© 2026 Prompt Builder. All rights reserved.</p>
+      <p className="mt-1">Developed by Jaival Pandya</p>
       <p className="mt-1">Powered by Gemini AI</p>
     </div>
   </motion.div>
