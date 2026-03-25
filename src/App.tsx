@@ -185,7 +185,7 @@ const HomePage = ({ setCurrentTab, history, t }: { setCurrentTab: (tab: string) 
   </motion.div>
 );
 
-const NotesPage = ({ history, setHistory, editingNote, setEditingNote, t }: { history: any[], setHistory: any, editingNote: any, setEditingNote: any, t: any }) => {
+const NotesPage = ({ history, setHistory, editingNote, setEditingNote, t }: any) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [fontSize, setFontSize] = useState('text-base');
   const [showMenu, setShowMenu] = useState(false);
@@ -505,22 +505,37 @@ const BuilderPage = ({ setCurrentTab, history, setHistory, editData, setEditData
       setStep(step + 1);
       try {
         const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-        const systemInstruction = "You are an expert AI prompt engineer. The user will provide basic details for an app they want to build. Your job is to expand these minimum details into a highly detailed, comprehensive, and maximum-length prompt that can be fed into an AI coding assistant (like Lovable, Cursor, or Bolt). Automatically add relevant core features, best practices for UI/UX, architecture suggestions, and detailed page structures based on the user's brief input. Return ONLY the generated prompt text, nothing else.";
+        const systemInstruction = `You are an expert AI prompt engineer and senior software architect. 
+The user will provide basic details for an application they want to build. 
+Your job is to expand these minimum details into a highly detailed, comprehensive, and maximum-length prompt that can be fed directly into an AI coding assistant (like Lovable, Cursor, Bolt, or v0).
+
+Your generated prompt MUST include:
+1. **Project Overview**: A clear summary of the app's purpose and target audience.
+2. **Core Features**: A detailed list of all necessary features, expanding on the user's input.
+3. **Architecture & Tech Stack**: Recommendations for frontend, backend, database, and state management.
+4. **UI/UX Design System**: Detailed specifications for colors (using the user's choices), typography, spacing, and component libraries (e.g., Tailwind CSS, shadcn/ui).
+5. **Page Structures**: A breakdown of every page/screen, including the layout and components needed.
+6. **Database Schema (if applicable)**: Suggested data models.
+7. **Step-by-Step Implementation Plan**: A guide for the AI to build the app logically.
+
+Return ONLY the generated prompt text in Markdown format. Do not include any conversational filler before or after the prompt.`;
 
         const userContent = `
+        Please generate a comprehensive prompt for the following app:
+        
         App Name: ${formData.appName || 'Not specified'}
         Topic/Description: ${formData.topic || 'Not specified'}
-        AI Platform: ${formData.aiPlatform || 'Not specified'}
+        AI Platform Target: ${formData.aiPlatform || 'Not specified'}
         Project Type: ${formData.projectType || 'Not specified'}
         Category: ${formData.category || 'Not specified'}
-        Colors: Primary ${formData.primaryColor}, Secondary ${formData.secondaryColor}, Background ${formData.backgroundColor}
-        Features: ${formData.features || 'Not specified'}
-        Pages: ${formData.pages.join(', ')} ${formData.customPages}
+        Design Colors: Primary ${formData.primaryColor}, Secondary ${formData.secondaryColor}, Background ${formData.backgroundColor}
+        Requested Features: ${formData.features || 'Not specified'}
+        Required Pages: ${formData.pages.join(', ')} ${formData.customPages ? ', ' + formData.customPages : ''}
         Extra Instructions: ${formData.extraInstructions || 'None'}
         `;
 
         const response = await ai.models.generateContent({
-          model: "gemini-3-flash-preview",
+          model: "gemini-3.1-pro-preview",
           contents: userContent,
           config: {
             systemInstruction: systemInstruction,
@@ -540,9 +555,9 @@ const BuilderPage = ({ setCurrentTab, history, setHistory, editData, setEditData
         };
         setHistory([newHistoryItem, ...history]);
         setGeneratedNoteId(newHistoryItem.id);
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error generating prompt:", error);
-        setGeneratedPrompt("An error occurred while generating the prompt. Please try again.");
+        setGeneratedPrompt(`An error occurred while generating the prompt: ${error.message || String(error)}. Please try again.`);
       } finally {
         setIsGenerating(false);
       }
@@ -1097,7 +1112,7 @@ const AboutPage = ({ setCurrentTab, t }: any) => (
     <div className="text-center text-gray-600 text-xs">
       <p>© 2026 Prompt Builder. All rights reserved.</p>
       <p className="mt-1">Developed by Jaival Pandya</p>
-      <p className="mt-1">Powered by Gemini AI</p>
+      <p className="mt-1">Powered by Jaival Pandya</p>
     </div>
   </motion.div>
 );
