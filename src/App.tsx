@@ -3,7 +3,7 @@ import {
   Home, FileText, Wand2, History, Settings as SettingsIcon, 
   Search, LayoutGrid, ChevronRight, ArrowRight, ArrowLeft, Shield, HelpCircle, 
   Moon, Sun, Globe, Sparkles, LogOut, Check, Copy, Trash2, Info, Languages,
-  MoreVertical, Share2, Pin, Undo, Redo, Edit2, X
+  MoreVertical, Share2, Pin, Undo, Redo, Edit2, X, AlertTriangle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { GoogleGenAI } from '@google/genai';
@@ -15,7 +15,7 @@ const translations: any = {
 };
 
 export default function App() {
-  const [currentTab, setCurrentTab] = useState('home');
+  const [currentTab, setCurrentTab] = useState(() => localStorage.getItem('currentTab') || 'home');
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
   const [language, setLanguage] = useState(() => localStorage.getItem('language') || 'en');
   const [history, setHistory] = useState<any[]>(() => {
@@ -25,7 +25,31 @@ export default function App() {
     } catch (e) { return []; }
   });
   const [editData, setEditData] = useState<any>(null);
-  const [editingNote, setEditingNote] = useState<any>(null);
+  const [editingNote, setEditingNote] = useState<any>(() => {
+    try {
+      const saved = localStorage.getItem('editingNote');
+      return saved ? JSON.parse(saved) : null;
+    } catch (e) { return null; }
+  });
+
+  const [globalApiKey, setGlobalApiKey] = useState(() => localStorage.getItem('user_gemini_api_key') || '');
+  const [showGlobalApiPopup, setShowGlobalApiPopup] = useState(() => !localStorage.getItem('user_gemini_api_key'));
+  const [tempGlobalApiKey, setTempGlobalApiKey] = useState(globalApiKey);
+
+  const handleSaveGlobalApiKey = () => {
+    setGlobalApiKey(tempGlobalApiKey);
+    localStorage.setItem('user_gemini_api_key', tempGlobalApiKey);
+    setShowGlobalApiPopup(false);
+  };
+
+  useEffect(() => {
+    localStorage.setItem('currentTab', currentTab);
+  }, [currentTab]);
+
+  useEffect(() => {
+    if (editingNote) localStorage.setItem('editingNote', JSON.stringify(editingNote));
+    else localStorage.removeItem('editingNote');
+  }, [editingNote]);
 
   useEffect(() => {
     localStorage.setItem('prompt_history', JSON.stringify(history));
@@ -54,14 +78,69 @@ export default function App() {
   return (
     <div className={`min-h-screen bg-[#05030A] text-white font-sans selection:bg-purple-500/30 font-inter ${theme === 'light' ? 'light-theme' : ''}`}>
       <AnimatePresence mode="wait">
-        {currentTab === 'home' && <HomePage key="home" setCurrentTab={setCurrentTab} history={history} t={t} />}
+        {currentTab === 'home' && <HomePage key="home" setCurrentTab={setCurrentTab} history={history} setEditData={setEditData} t={t} />}
         {currentTab === 'notes' && <NotesPage key="notes" history={history} setHistory={setHistory} editingNote={editingNote} setEditingNote={setEditingNote} t={t} />}
         {currentTab === 'builder' && <BuilderPage key="builder" setCurrentTab={setCurrentTab} history={history} setHistory={setHistory} editData={editData} setEditData={setEditData} setEditingNote={setEditingNote} t={t} />}
         {currentTab === 'history' && <HistoryPage key="history" history={history} onEdit={handleEdit} onDelete={handleDelete} t={t} />}
-        {currentTab === 'settings' && <SettingsPage key="settings" theme={theme} setTheme={setTheme} language={language} setLanguage={setLanguage} setCurrentTab={setCurrentTab} t={t} />}
+        {currentTab === 'settings' && <SettingsPage key="settings" theme={theme} setTheme={setTheme} language={language} setLanguage={setLanguage} setCurrentTab={setCurrentTab} t={t} apiKey={globalApiKey} setApiKey={setGlobalApiKey} />}
         {currentTab === 'about' && <AboutPage key="about" setCurrentTab={setCurrentTab} t={t} />}
       </AnimatePresence>
       <BottomNav currentTab={currentTab} setCurrentTab={setCurrentTab} t={t} />
+
+      {!globalApiKey && !showGlobalApiPopup && (
+        <div className="fixed bottom-24 left-4 right-4 bg-[#EF4444] text-white p-4 rounded-2xl text-center shadow-lg shadow-red-500/20 backdrop-blur-md z-[55] flex flex-col items-center justify-center gap-3 border border-white/10">
+          <div className="flex items-center gap-2 font-bold tracking-wide">
+            <AlertTriangle size={20} />
+            NOT ENTER VALID API KEY
+          </div>
+          <button onClick={() => setShowGlobalApiPopup(true)} className="bg-white text-red-500 font-bold px-6 py-2.5 rounded-xl text-sm w-full transition-transform active:scale-95 shadow-sm">
+            Enter API Key
+          </button>
+        </div>
+      )}
+
+      <AnimatePresence>
+        {showGlobalApiPopup && (
+          <motion.div 
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-6"
+          >
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-[#120F1C] border border-white/10 rounded-3xl p-6 w-full max-w-sm shadow-2xl relative"
+            >
+              {globalApiKey && (
+                <button onClick={() => setShowGlobalApiPopup(false)} className="absolute top-4 right-4 text-gray-400 hover:text-white p-2">
+                  <X size={20} />
+                </button>
+              )}
+              <div className="flex flex-col items-center mb-6 mt-2">
+                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-500/20 to-blue-500/20 flex items-center justify-center mb-4">
+                  <Sparkles className="text-purple-400" size={32} />
+                </div>
+                <h3 className="text-xl font-bold text-white text-center">Gemini API Key Needed</h3>
+                <p className="text-sm text-gray-400 text-center mt-2 leading-relaxed">
+                  Enter your valid Google Gemini API key to work properly. The key will be stored securely on your device for 1-2 months.
+                </p>
+              </div>
+              
+              <textarea 
+                value={tempGlobalApiKey}
+                onChange={(e) => setTempGlobalApiKey(e.target.value)}
+                className="w-full bg-[#05030A] border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 resize-none h-24 mb-4 text-sm font-mono placeholder:text-gray-600"
+                placeholder="AIzaSy..."
+                spellCheck="false"
+              />
+              <button 
+                onClick={handleSaveGlobalApiKey}
+                className="w-full py-3.5 rounded-xl font-medium text-white bg-gradient-to-r from-purple-600 to-blue-600 shadow-lg shadow-blue-900/20 active:scale-[0.98] transition-transform"
+              >
+                Save API Key
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -121,69 +200,146 @@ const NavItem = ({ icon, label, isActive, onClick }: any) => (
   </button>
 );
 
-const HomePage = ({ setCurrentTab, history, t }: { setCurrentTab: (tab: string) => void, history: any[], t: any, key?: string }) => (
-  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="p-6 pb-32">
-    <header className="mb-8 mt-4">
-      <h1 className="text-4xl font-bold bg-gradient-to-r from-[#A78BFA] to-[#60A5FA] bg-clip-text text-transparent mb-2 tracking-tight">Prompt Builder</h1>
-      <p className="text-gray-400 text-sm">Craft the perfect AI prompt.</p>
-    </header>
+const HomePage = ({ setCurrentTab, history, setEditData, t }: any) => {
+  const [showStartOptions, setShowStartOptions] = useState(false);
 
-    <div 
-      onClick={() => setCurrentTab('builder')}
-      className="relative overflow-hidden rounded-[28px] bg-gradient-to-br from-[#2A1B4E] to-[#161224] p-6 mb-6 border border-purple-500/20 cursor-pointer group shadow-xl shadow-purple-900/10"
-    >
-      <div className="absolute top-6 right-6 text-purple-400/40 group-hover:text-purple-400/60 transition-colors">
-        <Sparkles size={32} strokeWidth={1.5} />
-      </div>
-      <div className="w-12 h-12 rounded-full flex items-center justify-center mb-5 shadow-[0_0_15px_rgba(139,92,246,0.4)] overflow-hidden">
-        <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhiP8PtPcn_lYed8oigp1S0lt3qnSwtz0ifjHgxc3iKF01mdzKLRtm5Bq8gjxQd4-j69avgRw_AmPYyonScYLVsoXQ0tYn-AyRfnRGPEaoVcCucFH6M6j_gLA7pbPkbEfP2mv6qEkoI4I07ZDs-b_dnX85SgV4qM2lIekCWSJeilBojFT1x7vpVD5VTR5D2/s1120/45435.png" alt="Robot" className="w-full h-full object-cover rounded-full" />
-      </div>
-      <h2 className="text-2xl font-bold text-white mb-2">Create Prompt</h2>
-      <p className="text-gray-400 text-sm mb-6 max-w-[85%] leading-relaxed">Use our step-by-step wizard to generate a highly optimized prompt for any AI.</p>
-      <div className="flex items-center text-purple-400 font-medium text-sm group-hover:translate-x-1 transition-transform">
-        Start Building <ArrowRight size={16} className="ml-1.5" />
-      </div>
-    </div>
+  const startNewProject = () => {
+    setEditData(null);
+    setShowStartOptions(false);
+    setCurrentTab('builder');
+  };
 
-    <div className="grid grid-cols-2 gap-4 mb-8">
-      <div onClick={() => setCurrentTab('notes')} className="bg-[#120F1C] rounded-[24px] p-5 border border-white/5 cursor-pointer hover:bg-[#1A1625] transition-colors">
-        <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center mb-4 text-blue-400">
-          <FileText size={20} />
-        </div>
-        <h3 className="text-white font-semibold mb-1">Prompt Notes</h3>
-        <p className="text-gray-500 text-xs">Your saved prompts</p>
-      </div>
-      <div onClick={() => setCurrentTab('history')} className="bg-[#120F1C] rounded-[24px] p-5 border border-white/5 cursor-pointer hover:bg-[#1A1625] transition-colors">
-        <div className="w-10 h-10 rounded-full bg-yellow-500/10 flex items-center justify-center mb-4 text-yellow-500">
-          <History size={20} />
-        </div>
-        <h3 className="text-white font-semibold mb-1">History</h3>
-        <p className="text-gray-500 text-xs">Your past creations</p>
-      </div>
-    </div>
+  const openOldProject = (item: any) => {
+    setEditData(item);
+    setShowStartOptions(false);
+    setCurrentTab('builder');
+  };
 
-    <div>
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg font-bold text-white">Recent</h3>
-        <button onClick={() => setCurrentTab('history')} className="text-purple-400 text-xs font-medium uppercase tracking-wider">View All</button>
+  return (
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="p-6 pb-32">
+      <header className="mb-8 mt-4">
+        <h1 className="text-4xl font-bold bg-gradient-to-r from-[#A78BFA] to-[#60A5FA] bg-clip-text text-transparent mb-2 tracking-tight">Prompt Builder</h1>
+        <p className="text-gray-400 text-sm">Craft the perfect AI prompt.</p>
+      </header>
+
+      <div 
+        onClick={() => setShowStartOptions(true)}
+        className="relative overflow-hidden rounded-[28px] bg-gradient-to-br from-[#2A1B4E] to-[#161224] p-6 mb-6 border border-purple-500/20 cursor-pointer group shadow-xl shadow-purple-900/10"
+      >
+        <div className="absolute top-6 right-6 text-purple-400/40 group-hover:text-purple-400/60 transition-colors">
+          <Sparkles size={32} strokeWidth={1.5} />
+        </div>
+        <div className="w-12 h-12 rounded-full flex items-center justify-center mb-5 shadow-[0_0_15px_rgba(139,92,246,0.4)] overflow-hidden">
+          <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhiP8PtPcn_lYed8oigp1S0lt3qnSwtz0ifjHgxc3iKF01mdzKLRtm5Bq8gjxQd4-j69avgRw_AmPYyonScYLVsoXQ0tYn-AyRfnRGPEaoVcCucFH6M6j_gLA7pbPkbEfP2mv6qEkoI4I07ZDs-b_dnX85SgV4qM2lIekCWSJeilBojFT1x7vpVD5VTR5D2/s1120/45435.png" alt="Robot" className="w-full h-full object-cover rounded-full" />
+        </div>
+        <h2 className="text-2xl font-bold text-white mb-2">Create Prompt</h2>
+        <p className="text-gray-400 text-sm mb-6 max-w-[85%] leading-relaxed">Use our step-by-step wizard to generate a highly optimized prompt for any AI.</p>
+        <div className="flex items-center text-purple-400 font-medium text-sm group-hover:translate-x-1 transition-transform">
+          Start Building <ArrowRight size={16} className="ml-1.5" />
+        </div>
       </div>
-      {history && history.length > 0 ? (
-        <div className="space-y-3">
-          {history.slice(0, 2).map((item: any) => (
-            <div key={item.id} onClick={() => setCurrentTab('history')} className="bg-[#120F1C] rounded-2xl p-4 border border-white/5 cursor-pointer hover:border-white/10 transition-colors">
-              <h4 className="text-white font-medium text-sm truncate">{item.topic}</h4>
-              <p className="text-gray-500 text-xs mt-1 truncate">{item.prompt}</p>
-            </div>
-          ))}
+
+      <div className="grid grid-cols-2 gap-4 mb-8">
+        <div onClick={() => setCurrentTab('notes')} className="bg-[#120F1C] rounded-[24px] p-5 border border-white/5 cursor-pointer hover:bg-[#1A1625] transition-colors">
+          <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center mb-4 text-blue-400">
+            <FileText size={20} />
+          </div>
+          <h3 className="text-white font-semibold mb-1">Prompt Notes</h3>
+          <p className="text-gray-500 text-xs">Your saved prompts</p>
         </div>
-      ) : (
-        <div className="text-center py-10 text-gray-600 text-sm bg-[#120F1C] rounded-3xl border border-white/5">
-          No recent prompts yet.
+        <div onClick={() => setCurrentTab('history')} className="bg-[#120F1C] rounded-[24px] p-5 border border-white/5 cursor-pointer hover:bg-[#1A1625] transition-colors">
+          <div className="w-10 h-10 rounded-full bg-yellow-500/10 flex items-center justify-center mb-4 text-yellow-500">
+            <History size={20} />
+          </div>
+          <h3 className="text-white font-semibold mb-1">History</h3>
+          <p className="text-gray-500 text-xs">Your past creations</p>
         </div>
-      )}
-    </div>
-  </motion.div>
-);
+      </div>
+
+      <div>
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-bold text-white">Recent</h3>
+          <button onClick={() => setCurrentTab('history')} className="text-purple-400 text-xs font-medium uppercase tracking-wider">View All</button>
+        </div>
+        {history && history.length > 0 ? (
+          <div className="space-y-3">
+            {history.slice(0, 2).map((item: any) => (
+              <div key={item.id} onClick={() => setCurrentTab('history')} className="bg-[#120F1C] rounded-2xl p-4 border border-white/5 cursor-pointer hover:border-white/10 transition-colors">
+                <h4 className="text-white font-medium text-sm truncate">{item.topic}</h4>
+                <p className="text-gray-500 text-xs mt-1 truncate">{item.prompt}</p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-10 text-gray-600 text-sm bg-[#120F1C] rounded-3xl border border-white/5">
+            No recent prompts yet.
+          </div>
+        )}
+      </div>
+
+      <AnimatePresence>
+        {showStartOptions && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+          >
+            <motion.div
+              initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
+              className="bg-[#120F1C] border border-white/10 rounded-[32px] p-6 w-full max-w-sm shadow-2xl relative max-h-[85vh] flex flex-col"
+            >
+              <button 
+                onClick={(e) => { e.stopPropagation(); setShowStartOptions(false); }} 
+                className="absolute top-6 right-6 text-gray-400 hover:text-white p-2 rounded-full cursor-pointer z-10"
+              >
+                <X size={20} />
+              </button>
+              
+              <h3 className="text-lg font-bold text-white mb-1">Build Prompt</h3>
+              <p className="text-xs text-gray-400 mb-5">Choose how you want to start</p>
+              
+              <div className="bg-gradient-to-r from-purple-500/10 to-blue-500/10 rounded-2xl p-4 mb-4 border border-white/5 cursor-pointer hover:border-purple-500/30 transition-colors"
+                onClick={startNewProject}
+              >
+                <div className="flex flex-row items-center gap-4">
+                  <div className="w-10 h-10 bg-white/5 rounded-full flex items-center justify-center text-purple-400 shadow-inner">
+                    <Sparkles size={20} />
+                  </div>
+                  <div>
+                    <h4 className="text-white font-bold text-[15px]">Create New</h4>
+                    <p className="text-gray-400 text-xs mt-0.5">Start a fresh project from scratch</p>
+                  </div>
+                </div>
+              </div>
+
+              {history && history.length > 0 && (
+                <div className="flex-1 overflow-y-auto hide-scrollbar">
+                  <h4 className="text-gray-400 font-medium text-xs uppercase tracking-wider mb-3">Recent Prompts</h4>
+                  <div className="space-y-2">
+                    {history.slice(0, 5).map((item: any) => (
+                      <div 
+                        key={item.id} 
+                        onClick={() => openOldProject(item)}
+                        className="bg-white/5 rounded-2xl p-3.5 border border-white/5 cursor-pointer hover:bg-white/10 transition-colors flex items-center justify-between group"
+                      >
+                        <div className="flex-1 min-w-0 pr-4">
+                          <h4 className="text-white font-medium text-sm truncate">{item.formData?.appName || item.topic || 'Untitled'}</h4>
+                          <p className="text-gray-500 text-[11px] mt-1 truncate">{new Date(item.createdAt).toLocaleDateString()}</p>
+                        </div>
+                        <div className="text-gray-500 group-hover:text-purple-400 transition-colors">
+                          <Edit2 size={16} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  );
+};
 
 const NotesPage = ({ history, setHistory, editingNote, setEditingNote, t }: any) => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -246,13 +402,15 @@ const NotesPage = ({ history, setHistory, editingNote, setEditingNote, t }: any)
     }
   };
 
-  const filteredHistory = history.filter((item: any) => 
-    item.topic.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    item.prompt.toLowerCase().includes(searchQuery.toLowerCase())
-  ).sort((a: any, b: any) => {
+  const filteredHistory = history.filter((item: any) => {
+    const term = searchQuery.toLowerCase();
+    const topic = (item.topic || '').toLowerCase();
+    const prompt = (item.prompt || '').toLowerCase();
+    return topic.includes(term) || prompt.includes(term);
+  }).sort((a: any, b: any) => {
     if (a.isPinned && !b.isPinned) return -1;
     if (!a.isPinned && b.isPinned) return 1;
-    return 0;
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
   });
 
   const DOT_COLORS = ['bg-[#FF3B6A]', 'bg-[#3B82F6]', 'bg-[#A855F7]', 'bg-[#EAB308]', 'bg-[#22C55E]', 'bg-[#06B6D4]'];
@@ -420,7 +578,7 @@ const CATEGORIES = [
 
 const AI_PLATFORMS = ['AI Studio', 'Lovable AI', 'Claude AI', 'ChatGPT', 'Gemini', 'Bolt AI'];
 const PROJECT_TYPES = ['App', 'Website', 'Web App'];
-const PREDEFINED_PAGES = ['Home page', 'Main page', 'Splash screen page', 'About page', 'Contact page', 'History page', 'Enter page'];
+const PREDEFINED_FRAMEWORKS = ['HTML/CSS/JS', 'Flutter', 'Java', 'Kotlin', 'Next.js', 'React', 'Vue', 'React Native', 'Swift'];
 
 const PREDEFINED_PALETTES = [
   { name: 'Neon Cyber', primary: '#8B5CF6', secondary: '#3B82F6', bg: '#05030A' },
@@ -443,12 +601,15 @@ const GradientTextarea = ({ value, onChange, placeholder, className = "min-h-[15
 );
 
 const BuilderPage = ({ setCurrentTab, history, setHistory, editData, setEditData, setEditingNote, t }: any) => {
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(() => parseInt(localStorage.getItem('builder_step') || '1', 10));
   const totalSteps = 8;
   const [copied, setCopied] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [generatedPrompt, setGeneratedPrompt] = useState('');
-  const [generatedNoteId, setGeneratedNoteId] = useState<number | null>(null);
+  const [generatedPrompt, setGeneratedPrompt] = useState(() => localStorage.getItem('builder_generatedPrompt') || '');
+  const [generatedNoteId, setGeneratedNoteId] = useState<number | null>(() => {
+    const saved = localStorage.getItem('builder_generatedNoteId');
+    return saved ? parseInt(saved, 10) : null;
+  });
 
   const initialFormData = {
     appName: '',
@@ -460,18 +621,42 @@ const BuilderPage = ({ setCurrentTab, history, setHistory, editData, setEditData
     secondaryColor: '#3B82F6',
     backgroundColor: '#05030A',
     features: '',
-    pages: [] as string[],
-    customPages: '',
+    frameworks: [] as string[],
+    customFrameworks: '',
     extraInstructions: ''
   };
 
-  const [formData, setFormData] = useState(initialFormData);
+  const [formData, setFormData] = useState(() => {
+    try {
+      const saved = localStorage.getItem('builder_formData');
+      return saved ? JSON.parse(saved) : initialFormData;
+    } catch(e) {
+      return initialFormData;
+    }
+  });
+
+  useEffect(() => {
+    localStorage.setItem('builder_step', step.toString());
+  }, [step]);
+  
+  useEffect(() => {
+    localStorage.setItem('builder_generatedPrompt', generatedPrompt);
+  }, [generatedPrompt]);
+  
+  useEffect(() => {
+    if (generatedNoteId) localStorage.setItem('builder_generatedNoteId', generatedNoteId.toString());
+    else localStorage.removeItem('builder_generatedNoteId');
+  }, [generatedNoteId]);
+
+  useEffect(() => {
+    localStorage.setItem('builder_formData', JSON.stringify(formData));
+  }, [formData]);
 
   useEffect(() => {
     if (editData) {
-      setFormData({ ...initialFormData, ...editData });
+      setFormData({ ...initialFormData, ...(editData.formData || editData) });
       setStep(1);
-      setEditData(null);
+      setTimeout(() => setEditData(null), 0);
     }
   }, [editData, setEditData]);
 
@@ -481,7 +666,7 @@ const BuilderPage = ({ setCurrentTab, history, setHistory, editData, setEditData
     "Category",
     "Design & Colors",
     "Features",
-    "Pages",
+    "Frameworks",
     "Extra Instructions",
     "Generated Prompt"
   ];
@@ -493,7 +678,7 @@ const BuilderPage = ({ setCurrentTab, history, setHistory, editData, setEditData
       case 3: return formData.category !== '';
       case 4: return true; // Colors have defaults
       case 5: return formData.features.trim().length > 0;
-      case 6: return formData.pages.length > 0 || formData.customPages.trim().length > 0;
+      case 6: return formData.frameworks?.length > 0 || formData.customFrameworks?.trim().length > 0;
       case 7: return true; // Extra instructions can be optional
       default: return true;
     }
@@ -504,7 +689,8 @@ const BuilderPage = ({ setCurrentTab, history, setHistory, editData, setEditData
       setIsGenerating(true);
       setStep(step + 1);
       try {
-        const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+        const userApiKey = localStorage.getItem('user_gemini_api_key');
+        const ai = new GoogleGenAI({ apiKey: userApiKey || process.env.GEMINI_API_KEY });
         const systemInstruction = `You are an expert AI prompt engineer and senior software architect. 
 The user will provide basic details for an application they want to build. 
 Your job is to expand these minimum details into a highly detailed, comprehensive, and maximum-length prompt that can be fed directly into an AI coding assistant (like Lovable, Cursor, Bolt, or v0).
@@ -530,7 +716,7 @@ Return ONLY the generated prompt text in Markdown format. Do not include any con
         Category: ${formData.category || 'Not specified'}
         Design Colors: Primary ${formData.primaryColor}, Secondary ${formData.secondaryColor}, Background ${formData.backgroundColor}
         Requested Features: ${formData.features || 'Not specified'}
-        Required Pages: ${formData.pages.join(', ')} ${formData.customPages ? ', ' + formData.customPages : ''}
+        Required Frameworks: ${formData.frameworks?.join(', ')} ${formData.customFrameworks ? ', ' + formData.customFrameworks : ''}
         Extra Instructions: ${formData.extraInstructions || 'None'}
         `;
 
@@ -755,18 +941,18 @@ Return ONLY the generated prompt text in Markdown format. Do not include any con
 
         {step === 6 && (
           <motion.div initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
-            <p className="text-gray-400 text-sm mb-4">Select the pages you need or add custom ones.</p>
+            <p className="text-gray-400 text-sm mb-4">Select the frameworks you need or add custom ones.</p>
             <div className="space-y-3 mb-6">
-              {PREDEFINED_PAGES.map(page => {
-                const isSelected = formData.pages.includes(page);
+              {PREDEFINED_FRAMEWORKS.map(framework => {
+                const isSelected = formData.frameworks?.includes(framework);
                 return (
                   <div 
-                    key={page} 
+                    key={framework} 
                     onClick={() => {
                       if (isSelected) {
-                        setFormData({...formData, pages: formData.pages.filter(p => p !== page)});
+                        setFormData({...formData, frameworks: formData.frameworks.filter((f: string) => f !== framework)});
                       } else {
-                        setFormData({...formData, pages: [...formData.pages, page]});
+                        setFormData({...formData, frameworks: [...(formData.frameworks || []), framework]});
                       }
                     }}
                     className={`flex items-center p-4 rounded-2xl border cursor-pointer transition-all ${isSelected ? 'bg-purple-500/10 border-purple-500/50' : 'bg-[#120F1C] border-white/5 hover:border-white/10'}`}
@@ -774,17 +960,17 @@ Return ONLY the generated prompt text in Markdown format. Do not include any con
                     <div className={`w-6 h-6 rounded-md flex items-center justify-center mr-3 transition-colors ${isSelected ? 'bg-gradient-to-br from-purple-500 to-blue-500 text-white' : 'bg-white/5 border border-white/10'}`}>
                       {isSelected && <Check size={14} strokeWidth={3} />}
                     </div>
-                    <span className={isSelected ? 'text-white font-medium' : 'text-gray-400'}>{page}</span>
+                    <span className={isSelected ? 'text-white font-medium' : 'text-gray-400'}>{framework}</span>
                   </div>
                 );
               })}
             </div>
             <div>
-              <h3 className="text-white font-medium mb-3 text-sm">Manual Page Entry</h3>
+              <h3 className="text-white font-medium mb-3 text-sm">Manual Framework Entry</h3>
               <GradientTextarea 
-                value={formData.customPages} 
-                onChange={(e: any) => setFormData({...formData, customPages: e.target.value})} 
-                placeholder="e.g. Settings page, User Profile page, Checkout page..." 
+                value={formData.customFrameworks || formData.customPages || ''} 
+                onChange={(e: any) => setFormData({...formData, customFrameworks: e.target.value})} 
+                placeholder="e.g. Svelte, Angular, Express.js..." 
                 className="min-h-[80px]"
               />
             </div>
@@ -841,9 +1027,9 @@ Return ONLY the generated prompt text in Markdown format. Do not include any con
                       </p>
                     </div>
                   ) : (
-                    <pre className="text-sm text-white whitespace-pre-wrap font-['JetBrains_Mono',_monospace] leading-relaxed selection:bg-purple-500/30">
-                      {generatedPrompt}
-                    </pre>
+                      <pre className="text-base text-white whitespace-pre-wrap font-['Roboto',_sans-serif] font-bold leading-relaxed selection:bg-purple-500/30">
+                        {generatedPrompt}
+                      </pre>
                   )}
                 </div>
               </div>
@@ -977,10 +1163,13 @@ const HistoryPage = ({ history, onEdit, onDelete, t }: any) => (
   </motion.div>
 );
 
-const SettingsPage = ({ theme, setTheme, language, setLanguage, setCurrentTab, t }: any) => {
+const SettingsPage = ({ theme, setTheme, language, setLanguage, setCurrentTab, t, apiKey, setApiKey }: any) => {
   const [name, setName] = useState(() => localStorage.getItem('userName') || 'Jaival Pandya');
   const [isEditingName, setIsEditingName] = useState(false);
   const [tempName, setTempName] = useState(name);
+  
+  const [isEditingApiKey, setIsEditingApiKey] = useState(false);
+  const [tempApiKey, setTempApiKey] = useState(apiKey || '');
 
   const toggleTheme = () => setTheme(theme === 'dark' ? 'light' : 'dark');
   
@@ -994,6 +1183,12 @@ const SettingsPage = ({ theme, setTheme, language, setLanguage, setCurrentTab, t
     setName(tempName);
     localStorage.setItem('userName', tempName);
     setIsEditingName(false);
+  };
+
+  const handleSaveApiKey = () => {
+    setApiKey(tempApiKey);
+    localStorage.setItem('user_gemini_api_key', tempApiKey);
+    setIsEditingApiKey(false);
   };
 
   const langDisplay: any = { en: 'English', es: 'Español', fr: 'Français' };
@@ -1030,6 +1225,13 @@ const SettingsPage = ({ theme, setTheme, language, setLanguage, setCurrentTab, t
           <SettingItem icon={theme === 'dark' ? <Moon size={18} /> : <Sun size={18} />} label="Appearance" value={theme === 'dark' ? 'Dark' : 'Light'} onClick={toggleTheme} />
           <div className="h-[1px] bg-white/5 mx-5" />
           <SettingItem icon={<Languages size={18} />} label="Language" value={langDisplay[language]} onClick={cycleLanguage} />
+          <div className="h-[1px] bg-white/5 mx-5" />
+          <SettingItem 
+            icon={<Sparkles size={18} />} 
+            label="Gemini API Key" 
+            value={apiKey ? '••••••••' : 'Setup required'} 
+            onClick={() => { setTempApiKey(apiKey); setIsEditingApiKey(true); }} 
+          />
         </div>
       </div>
 
@@ -1073,6 +1275,38 @@ const SettingsPage = ({ theme, setTheme, language, setLanguage, setCurrentTab, t
                 className="w-full py-3 rounded-xl font-medium text-white bg-gradient-to-r from-[#5B21B6] to-[#3B82F6] shadow-lg shadow-blue-900/20"
               >
                 Save Changes
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+        
+        {isEditingApiKey && (
+          <motion.div 
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-6"
+          >
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-[#120F1C] border border-white/10 rounded-3xl p-6 w-full max-w-sm shadow-2xl"
+            >
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-bold text-white">Gemini API Key</h3>
+                <button onClick={() => setIsEditingApiKey(false)} className="text-gray-400 hover:text-white">
+                  <X size={20} />
+                </button>
+              </div>
+              <p className="text-xs text-gray-400 mb-4">Need an API key? Get one from Google AI Studio.</p>
+              <textarea 
+                value={tempApiKey}
+                onChange={(e) => setTempApiKey(e.target.value)}
+                className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 resize-none h-24 mb-4"
+                placeholder="AIzaSy..."
+              />
+              <button 
+                onClick={handleSaveApiKey}
+                className="w-full py-3 rounded-xl font-medium text-white bg-gradient-to-r from-[#5B21B6] to-[#3B82F6] shadow-lg shadow-blue-900/20"
+              >
+                Save Key
               </button>
             </motion.div>
           </motion.div>
