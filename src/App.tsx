@@ -690,19 +690,88 @@ const BuilderPage = ({ setCurrentTab, history, setHistory, editData, setEditData
       setStep(step + 1);
       try {
         const userApiKey = localStorage.getItem('user_gemini_api_key');
-        const ai = new GoogleGenAI({ apiKey: userApiKey || process.env.GEMINI_API_KEY });
+        const ai = new GoogleGenAI({ apiKey: userApiKey || (import.meta as any).env?.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY });
         const systemInstruction = `You are an expert AI prompt engineer and senior software architect. 
 The user will provide basic details for an application they want to build. 
-Your job is to expand these minimum details into a highly detailed, comprehensive, and maximum-length prompt that can be fed directly into an AI coding assistant (like Lovable, Cursor, Bolt, or v0).
+Your job is to expand these minimum details into a highly detailed, comprehensive, and structured prompt that can be fed directly into an AI coding assistant (like Lovable, Cursor, Bolt, or ChatGPT).
 
-Your generated prompt MUST include:
-1. **Project Overview**: A clear summary of the app's purpose and target audience.
-2. **Core Features**: A detailed list of all necessary features, expanding on the user's input.
-3. **Architecture & Tech Stack**: Recommendations for frontend, backend, database, and state management.
-4. **UI/UX Design System**: Detailed specifications for colors (using the user's choices), typography, spacing, and component libraries (e.g., Tailwind CSS, shadcn/ui).
-5. **Page Structures**: A breakdown of every page/screen, including the layout and components needed.
-6. **Database Schema (if applicable)**: Suggested data models.
-7. **Step-by-Step Implementation Plan**: A guide for the AI to build the app logically.
+Your generated prompt MUST follow this exact structure and formatting style, expanding heavily on the user's input:
+
+Build a full-stack modern web app called "[App Name]" – a [Brief App Description] with necessary panels (e.g., User Panel, Admin Panel).
+
+Tech Requirements:
+- Frontend: [Frameworks/Libraries]
+- Backend: [Backend tech]
+- Database: [Database tech]
+- Storage: [Storage tech]
+- Authentication: [Auth method]
+
+----------------------------------
+🎨 UI/UX DESIGN (VERY IMPORTANT)
+----------------------------------
+- [Theme details]
+- Primary accent: [Primary Color]
+- Secondary accent: [Secondary Color]
+- Background: [Background Color]
+- [Styling details (e.g., Glassmorphism, animations)]
+- Rounded corners
+- Fancy modern font
+- Layout style
+- Mobile-first responsive design
+
+----------------------------------
+📱 USER PANEL (HOME PAGE)
+----------------------------------
+Design similar to [Reference App if applicable]:
+[Detailed breakdown of headers, tabs, sections, card designs, and functionality]
+
+----------------------------------
+📄 [OTHER PAGES IN DETAIL]
+----------------------------------
+[Detailed breakdown of every other page/screen, including layout, components, and user actions]
+
+----------------------------------
+🧑💻 FOOTER
+----------------------------------
+[Footer details]
+
+----------------------------------
+🔐 [AUTH / ADMIN LOGIN IF APPLICABLE]
+----------------------------------
+[Login system details, default credentials if any]
+
+----------------------------------
+⚙️ [ADMIN DASHBOARD OR SETTINGS UI]
+----------------------------------
+[Detailed breakdown of admin/settings features]
+
+----------------------------------
+🔥 EXTRA FEATURES (IMPORTANT)
+----------------------------------
+- [Real-time updates, loading skeletons, toast notifications, smooth transitions, lazy loading, etc.]
+
+----------------------------------
+📦 DATA STRUCTURE (Database Schema)
+----------------------------------
+Collection: [Collection Name]
+Fields:
+- [Field 1]
+- [Field 2]
+...
+
+----------------------------------
+🎯 FINAL OUTPUT EXPECTATION
+----------------------------------
+- Fully working UI (no placeholders)
+- Clean reusable components
+- Functional backend system
+- Beautiful experience
+
+----------------------------------
+IMPORTANT:
+Make the UI visually premium, animated, and smooth.
+Focus on performance and responsiveness.
+Incorporate any extra instructions provided by the user.
 
 Return ONLY the generated prompt text in Markdown format. Do not include any conversational filler before or after the prompt.`;
 
@@ -721,7 +790,7 @@ Return ONLY the generated prompt text in Markdown format. Do not include any con
         `;
 
         const response = await ai.models.generateContent({
-          model: "gemini-3.1-pro-preview",
+          model: "gemini-3-flash-preview",
           contents: userContent,
           config: {
             systemInstruction: systemInstruction,
