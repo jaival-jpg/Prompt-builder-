@@ -111,8 +111,9 @@ export default function App() {
         {currentTab === 'history' && <HistoryPage key="history" history={history} onEdit={handleEdit} onDelete={handleDelete} t={t} />}
         {currentTab === 'settings' && <SettingsPage key="settings" theme={theme} setTheme={setTheme} language={language} setLanguage={setLanguage} setCurrentTab={setCurrentTab} t={t} apiKey={globalApiKey} setApiKey={setGlobalApiKey} />}
         {currentTab === 'about' && <AboutPage key="about" setCurrentTab={setCurrentTab} t={t} />}
+        {currentTab === 'ad_view' && <AdViewPage key="ad_view" setCurrentTab={setCurrentTab} setCredits={setCredits} />}
       </AnimatePresence>
-      <BottomNav currentTab={currentTab} setCurrentTab={setCurrentTab} t={t} />
+      {currentTab !== 'ad_view' && <BottomNav currentTab={currentTab} setCurrentTab={setCurrentTab} t={t} />}
 
       {!globalApiKey && !showGlobalApiPopup && (
         <div className="fixed bottom-24 left-4 right-4 bg-[#EF4444] text-white p-4 rounded-2xl text-center shadow-lg shadow-red-500/20 backdrop-blur-md z-[55] flex flex-col items-center justify-center gap-3 border border-white/10">
@@ -227,6 +228,54 @@ const NavItem = ({ icon, label, isActive, onClick }: any) => (
   </button>
 );
 
+const AdViewPage = ({ setCurrentTab, setCredits }: any) => {
+  const [page, setPage] = useState(1);
+  const [timeLeft, setTimeLeft] = useState(10);
+
+  useEffect(() => {
+    if (timeLeft > 0) {
+      const timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [timeLeft]);
+
+  const handleNext = () => {
+    if (page === 1) {
+      setPage(2);
+      setTimeLeft(10);
+    } else {
+      setCredits((prev: number) => prev + 1);
+      setCurrentTab('home');
+    }
+  };
+
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-[#05030A] z-[100] flex flex-col items-center overflow-y-auto pb-12">
+      {/* Top Header with counter / action */}
+      <div className="w-full flex justify-end p-6 sticky top-0 bg-[#05030A] z-10">
+        <div className="w-12 h-12 rounded-full border border-white/20 flex items-center justify-center bg-[#1A1A1A] shadow-lg">
+          {timeLeft > 0 ? (
+            <span className="text-white font-bold text-lg">{timeLeft}</span>
+          ) : (
+            <button onClick={handleNext} className="w-full h-full flex items-center justify-center rounded-full text-white hover:bg-white/10 transition-colors">
+              {page === 1 ? <ArrowRight size={24} /> : <X size={24} />}
+            </button>
+          )}
+        </div>
+      </div>
+      
+      {/* Advertising Content Area */}
+      <div className="flex-1 w-full flex flex-col items-center gap-8 py-8 px-4 mt-8">
+        <p className="text-gray-500 text-sm font-medium tracking-widest uppercase mb-4">Advertisement</p>
+        <AdsterraBanner />
+        <AdsterraBanner />
+        <AdsterraBanner />
+        <AdsterraBanner />
+      </div>
+    </motion.div>
+  );
+};
+
 const HomePage = ({ setCurrentTab, history, setEditData, credits, setCredits, t }: any) => {
   const [showStartOptions, setShowStartOptions] = useState(false);
   const [showCreditsModal, setShowCreditsModal] = useState(false);
@@ -244,24 +293,9 @@ const HomePage = ({ setCurrentTab, history, setEditData, credits, setCredits, t 
   };
 
   const watchAd = () => {
-    if ((window as any).Android && (window as any).Android.showRewardAd) {
-      (window as any).Android.showRewardAd();
-    } else {
-      alert("Watching Ad... (Simulated because not deeply linked in WebView)");
-      setCredits((prev: number) => prev + 1);
-    }
+    setShowCreditsModal(false);
+    setCurrentTab('ad_view');
   };
-
-  useEffect(() => {
-    // Set up global callback for Android WebView to call once the ad is completely watched
-    (window as any).onAdRewarded = () => {
-      setCredits((prev: number) => prev + 1);
-    };
-
-    return () => {
-      delete (window as any).onAdRewarded;
-    };
-  }, [setCredits]);
 
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="p-6 pb-32 relative">
