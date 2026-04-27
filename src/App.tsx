@@ -35,6 +35,49 @@ const AdsterraBanner = () => {
   );
 };
 
+const AdsterraSquareBanner = () => {
+  return (
+    <div className="w-full flex justify-center my-6 overflow-hidden">
+      <div className="w-[300px] h-[250px] bg-[#1A1A1A] rounded-2xl border border-white/10 flex items-center justify-center relative flex-shrink-0">
+        <iframe
+          srcDoc={`<!DOCTYPE html><html><head></head><body style="margin:0;padding:0;text-align:center;overflow:hidden;"><script>atOptions = {'key' : '0113bbfcf20f16f371fd963ed59aacbb','format' : 'iframe','height' : 250,'width' : 300,'params' : {}};</script><script src="https://www.highperformanceformat.com/0113bbfcf20f16f371fd963ed59aacbb/invoke.js"></script></body></html>`}
+          width="300"
+          height="250"
+          frameBorder="0"
+          scrolling="no"
+          sandbox="allow-scripts allow-top-navigation allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+          className="absolute inset-0 rounded-2xl"
+          title="Advertisement"
+        />
+        {/* Placeholder text visible behind the iframe */}
+        <span className="text-white/30 text-xs absolute pointer-events-none tracking-widest uppercase">ADVERTISEMENT</span>
+      </div>
+    </div>
+  );
+};
+
+const AdsterraNativeBanner = () => {
+  return (
+    <div className="w-full flex justify-center my-6 overflow-hidden">
+      <div className="w-full max-w-[600px] min-h-[300px] bg-[#1A1A1A] rounded-2xl border border-white/10 flex items-center justify-center relative flex-shrink-0">
+        <iframe
+          srcDoc={`<!DOCTYPE html><html><head></head><body style="margin:0;padding:0;text-align:center;"><script async="async" data-cfasync="false" src="https://pl29271929.profitablecpmratenetwork.com/bb69ef583463f69da669300a30c4519e/invoke.js"></script><div id="container-bb69ef583463f69da669300a30c4519e"></div></body></html>`}
+          width="100%"
+          height="100%"
+          style={{ minHeight: '300px' }}
+          frameBorder="0"
+          scrolling="yes"
+          sandbox="allow-scripts allow-top-navigation allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+          className="absolute inset-0 rounded-2xl z-10"
+          title="Native Advertisement"
+        />
+        {/* Placeholder text visible behind the iframe */}
+        <span className="text-white/30 text-xs absolute pointer-events-none tracking-widest uppercase">ADVERTISEMENT</span>
+      </div>
+    </div>
+  );
+};
+
 export default function App() {
   const [currentTab, setCurrentTab] = useState(() => localStorage.getItem('currentTab') || 'home');
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
@@ -57,7 +100,7 @@ export default function App() {
   const [showGlobalApiPopup, setShowGlobalApiPopup] = useState(() => !localStorage.getItem('user_gemini_api_key'));
   const [tempGlobalApiKey, setTempGlobalApiKey] = useState(globalApiKey);
 
-  const [credits, setCredits] = useState(() => parseInt(localStorage.getItem('credits') || '10', 10));
+  const [credits, setCredits] = useState(() => parseInt(localStorage.getItem('credits') || '5', 10));
 
   const handleSaveGlobalApiKey = () => {
     setGlobalApiKey(tempGlobalApiKey);
@@ -242,7 +285,7 @@ const AdViewPage = ({ setCurrentTab, setCredits }: any) => {
   const handleNext = () => {
     if (page === 1) {
       setPage(2);
-      setTimeLeft(10);
+      setTimeLeft(15);
     } else {
       setCredits((prev: number) => prev + 1);
       setCurrentTab('home');
@@ -252,13 +295,13 @@ const AdViewPage = ({ setCurrentTab, setCredits }: any) => {
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-[#05030A] z-[100] flex flex-col items-center overflow-y-auto pb-12">
       {/* Top Header with counter / action */}
-      <div className="w-full flex justify-end p-6 sticky top-0 bg-[#05030A] z-10">
-        <div className="w-12 h-12 rounded-full border border-white/20 flex items-center justify-center bg-[#1A1A1A] shadow-lg">
+      <div className="w-full flex justify-end p-4 sticky top-0 bg-[#05030A] z-10">
+        <div className="w-8 h-8 rounded-full border border-white/20 flex items-center justify-center bg-[#1A1A1A] shadow-md">
           {timeLeft > 0 ? (
-            <span className="text-white font-bold text-lg">{timeLeft}</span>
+            <span className="text-white font-bold text-sm">{timeLeft}</span>
           ) : (
             <button onClick={handleNext} className="w-full h-full flex items-center justify-center rounded-full text-white hover:bg-white/10 transition-colors">
-              {page === 1 ? <ArrowRight size={24} /> : <X size={24} />}
+              {page === 1 ? <ArrowRight size={16} /> : <X size={16} />}
             </button>
           )}
         </div>
@@ -267,10 +310,17 @@ const AdViewPage = ({ setCurrentTab, setCredits }: any) => {
       {/* Advertising Content Area */}
       <div className="flex-1 w-full flex flex-col items-center gap-8 py-8 px-4 mt-8">
         <p className="text-gray-500 text-sm font-medium tracking-widest uppercase mb-4">Advertisement</p>
-        <AdsterraBanner />
-        <AdsterraBanner />
-        <AdsterraBanner />
-        <AdsterraBanner />
+        {page === 1 ? (
+          <>
+            <AdsterraSquareBanner />
+            <AdsterraSquareBanner />
+          </>
+        ) : (
+          <>
+            <AdsterraNativeBanner />
+            <AdsterraNativeBanner />
+          </>
+        )}
       </div>
     </motion.div>
   );
