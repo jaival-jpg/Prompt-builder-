@@ -3,7 +3,7 @@ import {
   Home, FileText, Wand2, History, Settings as SettingsIcon, 
   Search, LayoutGrid, ChevronRight, ArrowRight, ArrowLeft, Shield, HelpCircle, 
   Moon, Sun, Globe, Sparkles, LogOut, Check, Copy, Trash2, Info, Languages,
-  MoreVertical, Share2, Pin, Undo, Redo, Edit2, X, AlertTriangle
+  MoreVertical, Share2, Pin, Undo, Redo, Edit2, X, AlertTriangle, Coins, PlayCircle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { GoogleGenAI } from '@google/genai';
@@ -12,6 +12,27 @@ const translations: any = {
   en: { home: 'Home', notes: 'Notes', builder: 'Builder', history: 'History', settings: 'Settings', about: 'About', createPrompt: 'Create Prompt', recent: 'Recent', viewAll: 'View All', startProject: 'Start a new project', noHistory: 'No history yet.' },
   es: { home: 'Inicio', notes: 'Notas', builder: 'Creador', history: 'Historial', settings: 'Ajustes', about: 'Acerca de', createPrompt: 'Crear Prompt', recent: 'Reciente', viewAll: 'Ver Todo', startProject: 'Iniciar nuevo proyecto', noHistory: 'Sin historial aún.' },
   fr: { home: 'Accueil', notes: 'Notes', builder: 'Créateur', history: 'Historique', settings: 'Paramètres', about: 'À propos', createPrompt: 'Créer Prompt', recent: 'Récent', viewAll: 'Voir Tout', startProject: 'Démarrer un projet', noHistory: 'Aucun historique.' }
+};
+
+const AdsterraBanner = () => {
+  return (
+    <div className="w-full flex justify-center my-6 overflow-hidden">
+      <div className="w-[320px] h-[50px] bg-[#1A1A1A] rounded-2xl border border-white/10 flex items-center justify-center relative flex-shrink-0">
+        <iframe
+          srcDoc={`<!DOCTYPE html><html><head></head><body style="margin:0;padding:0;text-align:center;overflow:hidden;"><script>atOptions = {'key' : '881a3a53a35faa08bc646ebed51328d4','format' : 'iframe','height' : 50,'width' : 320,'params' : {}};</script><script src="https://www.highperformanceformat.com/881a3a53a35faa08bc646ebed51328d4/invoke.js"></script></body></html>`}
+          width="320"
+          height="50"
+          frameBorder="0"
+          scrolling="no"
+          sandbox="allow-scripts allow-top-navigation allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+          className="absolute inset-0 rounded-2xl"
+          title="Advertisement"
+        />
+        {/* Placeholder text visible behind the iframe */}
+        <span className="text-white/30 text-xs absolute pointer-events-none tracking-widest uppercase">ADVERTISEMENT</span>
+      </div>
+    </div>
+  );
 };
 
 export default function App() {
@@ -36,11 +57,17 @@ export default function App() {
   const [showGlobalApiPopup, setShowGlobalApiPopup] = useState(() => !localStorage.getItem('user_gemini_api_key'));
   const [tempGlobalApiKey, setTempGlobalApiKey] = useState(globalApiKey);
 
+  const [credits, setCredits] = useState(() => parseInt(localStorage.getItem('credits') || '10', 10));
+
   const handleSaveGlobalApiKey = () => {
     setGlobalApiKey(tempGlobalApiKey);
     localStorage.setItem('user_gemini_api_key', tempGlobalApiKey);
     setShowGlobalApiPopup(false);
   };
+
+  useEffect(() => {
+    localStorage.setItem('credits', credits.toString());
+  }, [credits]);
 
   useEffect(() => {
     localStorage.setItem('currentTab', currentTab);
@@ -78,9 +105,9 @@ export default function App() {
   return (
     <div className={`min-h-screen bg-[#05030A] text-white font-sans selection:bg-purple-500/30 font-inter ${theme === 'light' ? 'light-theme' : ''}`}>
       <AnimatePresence mode="wait">
-        {currentTab === 'home' && <HomePage key="home" setCurrentTab={setCurrentTab} history={history} setEditData={setEditData} t={t} />}
+        {currentTab === 'home' && <HomePage key="home" setCurrentTab={setCurrentTab} history={history} setEditData={setEditData} credits={credits} setCredits={setCredits} t={t} />}
         {currentTab === 'notes' && <NotesPage key="notes" history={history} setHistory={setHistory} editingNote={editingNote} setEditingNote={setEditingNote} t={t} />}
-        {currentTab === 'builder' && <BuilderPage key="builder" setCurrentTab={setCurrentTab} history={history} setHistory={setHistory} editData={editData} setEditData={setEditData} setEditingNote={setEditingNote} t={t} />}
+        {currentTab === 'builder' && <BuilderPage key="builder" setCurrentTab={setCurrentTab} history={history} setHistory={setHistory} editData={editData} setEditData={setEditData} setEditingNote={setEditingNote} credits={credits} setCredits={setCredits} t={t} />}
         {currentTab === 'history' && <HistoryPage key="history" history={history} onEdit={handleEdit} onDelete={handleDelete} t={t} />}
         {currentTab === 'settings' && <SettingsPage key="settings" theme={theme} setTheme={setTheme} language={language} setLanguage={setLanguage} setCurrentTab={setCurrentTab} t={t} apiKey={globalApiKey} setApiKey={setGlobalApiKey} />}
         {currentTab === 'about' && <AboutPage key="about" setCurrentTab={setCurrentTab} t={t} />}
@@ -200,8 +227,9 @@ const NavItem = ({ icon, label, isActive, onClick }: any) => (
   </button>
 );
 
-const HomePage = ({ setCurrentTab, history, setEditData, t }: any) => {
+const HomePage = ({ setCurrentTab, history, setEditData, credits, setCredits, t }: any) => {
   const [showStartOptions, setShowStartOptions] = useState(false);
+  const [showCreditsModal, setShowCreditsModal] = useState(false);
 
   const startNewProject = () => {
     setEditData(null);
@@ -215,12 +243,85 @@ const HomePage = ({ setCurrentTab, history, setEditData, t }: any) => {
     setCurrentTab('builder');
   };
 
+  const watchAd = () => {
+    if ((window as any).Android && (window as any).Android.showRewardAd) {
+      (window as any).Android.showRewardAd();
+    } else {
+      alert("Watching Ad... (Simulated because not deeply linked in WebView)");
+      setCredits((prev: number) => prev + 1);
+    }
+  };
+
+  useEffect(() => {
+    // Set up global callback for Android WebView to call once the ad is completely watched
+    (window as any).onAdRewarded = () => {
+      setCredits((prev: number) => prev + 1);
+    };
+
+    return () => {
+      delete (window as any).onAdRewarded;
+    };
+  }, [setCredits]);
+
   return (
-    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="p-6 pb-32">
-      <header className="mb-8 mt-4">
-        <h1 className="text-4xl font-bold bg-gradient-to-r from-[#A78BFA] to-[#60A5FA] bg-clip-text text-transparent mb-2 tracking-tight">Prompt Builder</h1>
-        <p className="text-gray-400 text-sm">Craft the perfect AI prompt.</p>
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="p-6 pb-32 relative">
+      <header className="mb-8 mt-4 flex items-center justify-between">
+        <div>
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-[#A78BFA] to-[#60A5FA] bg-clip-text text-transparent mb-2 tracking-tight">Prompt Builder</h1>
+          <p className="text-gray-400 text-sm">Craft the perfect AI prompt.</p>
+        </div>
+        <div 
+          onClick={() => setShowCreditsModal(true)}
+          className="flex items-center gap-1.5 bg-[#161423] border border-yellow-500/30 px-3 py-1.5 rounded-full cursor-pointer hover:bg-[#1C1A2D] transition-colors"
+        >
+          <Coins size={16} className="text-yellow-400" />
+          <span className="font-bold text-yellow-100 text-sm">{credits}</span>
+        </div>
       </header>
+
+      <AnimatePresence>
+        {showCreditsModal && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }} className="bg-[#120F1C] border border-white/10 rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl shadow-yellow-500/10">
+              <div className="p-6">
+                <div className="flex justify-between items-start mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-full bg-yellow-500/10 flex items-center justify-center">
+                      <Coins size={24} className="text-yellow-400" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-white">Your Credits</h3>
+                      <p className="text-yellow-500/80 text-sm font-medium">{credits} Credits Available</p>
+                    </div>
+                  </div>
+                  <button onClick={() => setShowCreditsModal(false)} className="p-2 bg-white/5 hover:bg-white/10 rounded-full transition-colors">
+                    <X size={18} className="text-gray-400 hover:text-white" />
+                  </button>
+                </div>
+
+                <div className="bg-[#161423] rounded-2xl p-4 border border-white/5 mb-2">
+                  <p className="text-sm text-gray-300 mb-4 leading-relaxed">
+                    You need <strong className="text-white">1 Credit</strong> to generate a new AI prompt.
+                  </p>
+                  
+                  <div className="bg-gradient-to-r from-yellow-500/10 to-transparent p-4 rounded-xl border border-yellow-500/20 flex flex-col gap-3">
+                    <div className="flex items-center gap-2">
+                      <PlayCircle size={18} className="text-yellow-400" />
+                      <span className="text-sm font-semibold text-yellow-100">Watch Ads & Earn Credits</span>
+                    </div>
+                    <button 
+                      onClick={watchAd}
+                      className="w-full py-2.5 bg-yellow-500 hover:bg-yellow-400 text-black font-bold rounded-lg transition-colors flex items-center justify-center gap-2"
+                    >
+                      Watch Ad (+1 Credit)
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <div 
         onClick={() => setShowStartOptions(true)}
@@ -255,6 +356,8 @@ const HomePage = ({ setCurrentTab, history, setEditData, t }: any) => {
           <p className="text-gray-500 text-xs">Your past creations</p>
         </div>
       </div>
+
+      <AdsterraBanner />
 
       <div>
         <div className="flex justify-between items-center mb-4">
@@ -417,9 +520,9 @@ const NotesPage = ({ history, setHistory, editingNote, setEditingNote, t }: any)
 
   if (editingNote) {
     return (
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="fixed inset-0 z-[60] flex flex-col bg-[#121212]">
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="fixed inset-0 z-[60] flex flex-col bg-black">
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-4 bg-[#2E1065] border-b border-white/5">
+        <div className="flex items-center justify-between px-4 py-4 bg-gradient-to-r from-violet-600 to-blue-600 border-b border-white/5">
           <div className="flex items-center gap-4 flex-1">
             <button onClick={() => setEditingNote(null)} className="hover:bg-white/10 p-1 rounded-full transition-colors">
               <ArrowLeft size={24} className="text-white" />
@@ -429,7 +532,7 @@ const NotesPage = ({ history, setHistory, editingNote, setEditingNote, t }: any)
               value={editingNote.topic}
               onChange={(e) => handleUpdateNote(editingNote.id, 'topic', e.target.value)}
               placeholder="Note Title"
-              className="bg-transparent text-white font-medium text-lg focus:outline-none placeholder-gray-500 w-full"
+              className="bg-transparent text-white font-medium text-lg focus:outline-none placeholder-gray-300 w-full font-['Roboto',_sans-serif]"
             />
           </div>
           <div className="relative ml-2">
@@ -474,7 +577,7 @@ const NotesPage = ({ history, setHistory, editingNote, setEditingNote, t }: any)
           value={editingNote.prompt}
           onChange={(e) => handleUpdateNote(editingNote.id, 'prompt', e.target.value)}
           placeholder="Note content..."
-          className={`flex-1 w-full bg-transparent text-gray-200 ${fontSize} resize-none focus:outline-none font-['Inter',_sans-serif] leading-relaxed p-5`}
+          className={`flex-1 w-full bg-transparent text-gray-200 ${fontSize} resize-none focus:outline-none font-['Roboto',_sans-serif] leading-relaxed p-5`}
         />
 
         {/* Bottom Toolbar */}
@@ -600,7 +703,7 @@ const GradientTextarea = ({ value, onChange, placeholder, className = "min-h-[15
   </div>
 );
 
-const BuilderPage = ({ setCurrentTab, history, setHistory, editData, setEditData, setEditingNote, t }: any) => {
+const BuilderPage = ({ setCurrentTab, history, setHistory, editData, setEditData, setEditingNote, credits, setCredits, t }: any) => {
   const [step, setStep] = useState(() => parseInt(localStorage.getItem('builder_step') || '1', 10));
   const totalSteps = 8;
   const [copied, setCopied] = useState(false);
@@ -686,6 +789,11 @@ const BuilderPage = ({ setCurrentTab, history, setHistory, editData, setEditData
 
   const handleNext = async () => {
     if (step === totalSteps - 1) {
+      if (credits <= 0) {
+        alert("You don't have enough credits to generate a prompt. Please watch an ad to earn more credits.");
+        setCurrentTab('home');
+        return;
+      }
       setIsGenerating(true);
       setStep(step + 1);
       try {
@@ -810,6 +918,7 @@ Return ONLY the generated prompt text in Markdown format. Do not include any con
         };
         setHistory([newHistoryItem, ...history]);
         setGeneratedNoteId(newHistoryItem.id);
+        setCredits((prev: number) => prev - 1);
       } catch (error: any) {
         console.error("Error generating prompt:", error);
         setGeneratedPrompt(`An error occurred while generating the prompt: ${error.message || String(error)}. Please try again.`);
@@ -1180,12 +1289,15 @@ Return ONLY the generated prompt text in Markdown format. Do not include any con
 
 const HistoryPage = ({ history, onEdit, onDelete, t }: any) => (
   <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="p-6 pb-32">
-    <header className="flex items-center mb-8 mt-4">
+    <header className="flex items-center mb-6 mt-4">
       <div className="w-10 h-10 rounded-full bg-yellow-500/10 flex items-center justify-center mr-4 text-yellow-500">
         <History size={20} />
       </div>
       <h1 className="text-3xl font-bold text-white tracking-tight">{t.history}</h1>
     </header>
+
+    {/* Adsterra Ads Banner */}
+    <AdsterraBanner />
     
     {!history || history.length === 0 ? (
       <div className="text-center py-16 text-gray-600 bg-[#120F1C] rounded-3xl border border-white/5">
@@ -1313,7 +1425,9 @@ const SettingsPage = ({ theme, setTheme, language, setLanguage, setCurrentTab, t
         </div>
       </div>
 
-      <button className="w-full py-4 rounded-2xl bg-red-500/5 text-red-500 font-medium border border-red-500/10 flex items-center justify-center hover:bg-red-500/10 transition-colors">
+      <AdsterraBanner />
+
+      <button className="w-full py-4 rounded-2xl bg-red-500/5 text-red-500 font-medium border border-red-500/10 flex items-center justify-center hover:bg-red-500/10 transition-colors mb-6">
         <LogOut size={18} className="mr-2" /> Sign Out
       </button>
 
@@ -1412,7 +1526,9 @@ const AboutPage = ({ setCurrentTab, t }: any) => (
       </div>
     </div>
 
-    <div className="text-center text-gray-600 text-xs">
+    <AdsterraBanner />
+
+    <div className="text-center text-gray-600 text-xs mt-6">
       <p>© 2026 Prompt Builder. All rights reserved.</p>
       <p className="mt-1">Developed by Jaival Pandya</p>
       <p className="mt-1">Powered by Jaival Pandya</p>
