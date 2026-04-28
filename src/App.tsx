@@ -37,7 +37,7 @@ const AdsterraBanner = () => {
 
 const AdsterraSquareBanner = () => {
   return (
-    <div className="w-full flex justify-center my-6 overflow-hidden">
+    <div className="w-full flex justify-center my-0 overflow-hidden">
       <div className="w-[300px] h-[250px] bg-[#1A1A1A] rounded-2xl border border-white/10 flex items-center justify-center relative flex-shrink-0">
         <iframe
           srcDoc={`<!DOCTYPE html><html><head></head><body style="margin:0;padding:0;text-align:center;overflow:hidden;"><script>atOptions = {'key' : '0113bbfcf20f16f371fd963ed59aacbb','format' : 'iframe','height' : 250,'width' : 300,'params' : {}};</script><script src="https://www.highperformanceformat.com/0113bbfcf20f16f371fd963ed59aacbb/invoke.js"></script></body></html>`}
@@ -58,7 +58,7 @@ const AdsterraSquareBanner = () => {
 
 const AdsterraNativeBanner = () => {
   return (
-    <div className="w-full flex justify-center my-6 overflow-hidden">
+    <div className="w-full flex justify-center my-0 overflow-hidden">
       <div className="w-full max-w-[600px] min-h-[300px] bg-[#1A1A1A] rounded-2xl border border-white/10 flex items-center justify-center relative flex-shrink-0">
         <iframe
           srcDoc={`<!DOCTYPE html><html><head></head><body style="margin:0;padding:0;text-align:center;"><script async="async" data-cfasync="false" src="https://pl29271929.profitablecpmratenetwork.com/bb69ef583463f69da669300a30c4519e/invoke.js"></script><div id="container-bb69ef583463f69da669300a30c4519e"></div></body></html>`}
@@ -82,6 +82,7 @@ export default function App() {
   const [currentTab, setCurrentTab] = useState(() => localStorage.getItem('currentTab') || 'home');
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
   const [language, setLanguage] = useState(() => localStorage.getItem('language') || 'en');
+  const [adConfig, setAdConfig] = useState<any>(null);
   const [history, setHistory] = useState<any[]>(() => {
     try {
       const saved = localStorage.getItem('prompt_history');
@@ -148,13 +149,13 @@ export default function App() {
   return (
     <div className={`min-h-screen bg-[#05030A] text-white font-sans selection:bg-purple-500/30 font-inter ${theme === 'light' ? 'light-theme' : ''}`}>
       <AnimatePresence mode="wait">
-        {currentTab === 'home' && <HomePage key="home" setCurrentTab={setCurrentTab} history={history} setEditData={setEditData} credits={credits} setCredits={setCredits} t={t} />}
+        {currentTab === 'home' && <HomePage key="home" setCurrentTab={setCurrentTab} history={history} setEditData={setEditData} credits={credits} setCredits={setCredits} t={t} setAdConfig={setAdConfig} />}
         {currentTab === 'notes' && <NotesPage key="notes" history={history} setHistory={setHistory} editingNote={editingNote} setEditingNote={setEditingNote} t={t} />}
-        {currentTab === 'builder' && <BuilderPage key="builder" setCurrentTab={setCurrentTab} history={history} setHistory={setHistory} editData={editData} setEditData={setEditData} setEditingNote={setEditingNote} credits={credits} setCredits={setCredits} t={t} />}
+        {currentTab === 'builder' && <BuilderPage key="builder" setCurrentTab={setCurrentTab} history={history} setHistory={setHistory} editData={editData} setEditData={setEditData} setEditingNote={setEditingNote} credits={credits} setCredits={setCredits} t={t} setAdConfig={setAdConfig} />}
         {currentTab === 'history' && <HistoryPage key="history" history={history} onEdit={handleEdit} onDelete={handleDelete} t={t} />}
         {currentTab === 'settings' && <SettingsPage key="settings" theme={theme} setTheme={setTheme} language={language} setLanguage={setLanguage} setCurrentTab={setCurrentTab} t={t} apiKey={globalApiKey} setApiKey={setGlobalApiKey} />}
         {currentTab === 'about' && <AboutPage key="about" setCurrentTab={setCurrentTab} t={t} />}
-        {currentTab === 'ad_view' && <AdViewPage key="ad_view" setCurrentTab={setCurrentTab} setCredits={setCredits} />}
+        {currentTab === 'ad_view' && <AdViewPage key="ad_view" setCurrentTab={setCurrentTab} setCredits={setCredits} adConfig={adConfig} />}
       </AnimatePresence>
       {currentTab !== 'ad_view' && <BottomNav currentTab={currentTab} setCurrentTab={setCurrentTab} t={t} />}
 
@@ -240,39 +241,41 @@ const BottomNav = ({ currentTab, setCurrentTab, t }: { currentTab: string, setCu
   if (isKeyboardOpen) return null;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-[#05030A]/90 backdrop-blur-xl border-t border-white/5 px-6 py-3 pb-6 flex justify-between items-center z-50">
-      <NavItem icon={<Home />} label={t.home} isActive={currentTab === 'home'} onClick={() => setCurrentTab('home')} />
-      <NavItem icon={<FileText />} label={t.notes} isActive={currentTab === 'notes'} onClick={() => setCurrentTab('notes')} />
-      
-      {/* FAB */}
-      <div className="relative -top-5">
-        <button 
-          onClick={() => setCurrentTab('builder')}
-          className={`rounded-full shadow-[0_0_25px_rgba(139,92,246,0.6)] transition-transform hover:scale-105 active:scale-95 ${currentTab === 'builder' ? 'ring-4 ring-purple-500/50' : ''}`}
-        >
-          <img 
-            src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhiP8PtPcn_lYed8oigp1S0lt3qnSwtz0ifjHgxc3iKF01mdzKLRtm5Bq8gjxQd4-j69avgRw_AmPYyonScYLVsoXQ0tYn-AyRfnRGPEaoVcCucFH6M6j_gLA7pbPkbEfP2mv6qEkoI4I07ZDs-b_dnX85SgV4qM2lIekCWSJeilBojFT1x7vpVD5VTR5D2/s1120/45435.png" 
-            alt="Create Prompt" 
-            className={`w-14 h-14 object-cover rounded-full ${currentTab === 'builder' ? 'animate-pulse' : ''}`} 
-          />
-        </button>
-      </div>
+    <div className="fixed bottom-3 left-4 right-4 sm:left-1/2 sm:right-auto sm:w-[380px] sm:-translate-x-1/2 z-50">
+      <div className="bg-[#1A1625]/90 backdrop-blur-3xl border border-white/10 shadow-[0_20px_40px_-10px_rgba(0,0,0,0.8),0_0_20px_rgba(168,85,247,0.15)] rounded-full px-5 py-1.5 flex justify-between items-center relative">
+        <NavItem icon={<Home />} label={t.home} isActive={currentTab === 'home'} onClick={() => setCurrentTab('home')} />
+        <NavItem icon={<FileText />} label={t.notes} isActive={currentTab === 'notes'} onClick={() => setCurrentTab('notes')} />
+        
+        {/* FAB */}
+        <div className="relative -top-5">
+          <button 
+            onClick={() => setCurrentTab('builder')}
+            className={`rounded-full p-1 bg-gradient-to-b from-[#2A253C] to-[#120F1C] border border-white/20 shadow-[0_8px_30px_rgba(168,85,247,0.5)] transition-all hover:scale-110 active:scale-95 ${currentTab === 'builder' ? 'ring-2 ring-purple-500 shadow-[0_0_30px_rgba(168,85,247,0.8)]' : ''}`}
+          >
+            <img 
+              src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhiP8PtPcn_lYed8oigp1S0lt3qnSwtz0ifjHgxc3iKF01mdzKLRtm5Bq8gjxQd4-j69avgRw_AmPYyonScYLVsoXQ0tYn-AyRfnRGPEaoVcCucFH6M6j_gLA7pbPkbEfP2mv6qEkoI4I07ZDs-b_dnX85SgV4qM2lIekCWSJeilBojFT1x7vpVD5VTR5D2/s1120/45435.png" 
+              alt="Create Prompt" 
+              className={`w-[44px] h-[44px] object-cover rounded-full ${currentTab === 'builder' ? 'animate-pulse' : ''}`} 
+            />
+          </button>
+        </div>
 
-      <NavItem icon={<History />} label={t.history} isActive={currentTab === 'history'} onClick={() => setCurrentTab('history')} />
-      <NavItem icon={<SettingsIcon />} label={t.settings} isActive={currentTab === 'settings'} onClick={() => setCurrentTab('settings')} />
+        <NavItem icon={<History />} label={t.history} isActive={currentTab === 'history'} onClick={() => setCurrentTab('history')} />
+        <NavItem icon={<SettingsIcon />} label={t.settings} isActive={currentTab === 'settings'} onClick={() => setCurrentTab('settings')} />
+      </div>
     </div>
   );
 };
 
 const NavItem = ({ icon, label, isActive, onClick }: any) => (
-  <button onClick={onClick} className={`flex flex-col items-center justify-center w-14 gap-1.5 transition-colors ${isActive ? 'text-purple-400' : 'text-gray-500 hover:text-gray-300'}`}>
-    {React.cloneElement(icon, { size: 22, className: isActive ? 'drop-shadow-[0_0_8px_rgba(168,85,247,0.5)]' : '' })}
-    <span className="text-[10px] font-medium tracking-wide">{label}</span>
+  <button onClick={onClick} className={`flex flex-col items-center justify-center w-12 gap-1 transition-colors ${isActive ? 'text-purple-400' : 'text-gray-500 hover:text-gray-300'}`}>
+    {React.cloneElement(icon, { size: 20, className: isActive ? 'drop-shadow-[0_0_8px_rgba(168,85,247,0.5)]' : '' })}
+    <span className="text-[9px] font-semibold tracking-wide">{label}</span>
   </button>
 );
 
-const AdViewPage = ({ setCurrentTab, setCredits }: any) => {
-  const [page, setPage] = useState(1);
+const AdViewPage = ({ setCurrentTab, setCredits, adConfig }: any) => {
+  const [page, setPage] = useState(adConfig?.startPage || 1);
   const [timeLeft, setTimeLeft] = useState(10);
 
   useEffect(() => {
@@ -283,19 +286,23 @@ const AdViewPage = ({ setCurrentTab, setCredits }: any) => {
   }, [timeLeft]);
 
   const handleNext = () => {
-    if (page === 1) {
+    if (page === 1 && !adConfig) {
       setPage(2);
-      setTimeLeft(15);
+      setTimeLeft(10);
     } else {
-      setCredits((prev: number) => prev + 1);
-      setCurrentTab('home');
+      if (adConfig?.onComplete) {
+        adConfig.onComplete();
+      } else {
+        setCredits((prev: number) => prev + 1);
+      }
+      setCurrentTab(adConfig?.nextTab || 'home');
     }
   };
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-[#05030A] z-[100] flex flex-col items-center overflow-y-auto pb-12">
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-[#05030A] z-[100] flex flex-col items-center overflow-hidden">
       {/* Top Header with counter / action */}
-      <div className="w-full flex justify-end p-4 sticky top-0 bg-[#05030A] z-10">
+      <div className="w-full flex justify-end p-4 z-10">
         <div className="w-8 h-8 rounded-full border border-white/20 flex items-center justify-center bg-[#1A1A1A] shadow-md">
           {timeLeft > 0 ? (
             <span className="text-white font-bold text-sm">{timeLeft}</span>
@@ -308,8 +315,8 @@ const AdViewPage = ({ setCurrentTab, setCredits }: any) => {
       </div>
       
       {/* Advertising Content Area */}
-      <div className="flex-1 w-full flex flex-col items-center gap-8 py-8 px-4 mt-8">
-        <p className="text-gray-500 text-sm font-medium tracking-widest uppercase mb-4">Advertisement</p>
+      <div className="flex-1 w-full flex flex-col items-center gap-4 pt-0 pb-4 px-4 h-full overflow-hidden">
+        <p className="text-gray-500 text-xs font-medium tracking-widest uppercase mb-2">Advertisement</p>
         {page === 1 ? (
           <>
             <AdsterraSquareBanner />
@@ -326,7 +333,7 @@ const AdViewPage = ({ setCurrentTab, setCredits }: any) => {
   );
 };
 
-const HomePage = ({ setCurrentTab, history, setEditData, credits, setCredits, t }: any) => {
+const HomePage = ({ setCurrentTab, history, setEditData, credits, setCredits, t, setAdConfig }: any) => {
   const [showStartOptions, setShowStartOptions] = useState(false);
   const [showCreditsModal, setShowCreditsModal] = useState(false);
 
@@ -344,6 +351,7 @@ const HomePage = ({ setCurrentTab, history, setEditData, credits, setCredits, t 
 
   const watchAd = () => {
     setShowCreditsModal(false);
+    setAdConfig(null); // Reset adConfig for default flow
     setCurrentTab('ad_view');
   };
 
@@ -787,7 +795,7 @@ const GradientTextarea = ({ value, onChange, placeholder, className = "min-h-[15
   </div>
 );
 
-const BuilderPage = ({ setCurrentTab, history, setHistory, editData, setEditData, setEditingNote, credits, setCredits, t }: any) => {
+const BuilderPage = ({ setCurrentTab, history, setHistory, editData, setEditData, setEditingNote, credits, setCredits, t, setAdConfig }: any) => {
   const [step, setStep] = useState(() => parseInt(localStorage.getItem('builder_step') || '1', 10));
   const totalSteps = 8;
   const [copied, setCopied] = useState(false);
@@ -1010,10 +1018,17 @@ Return ONLY the generated prompt text in Markdown format. Do not include any con
         setIsGenerating(false);
       }
     } else if (step === totalSteps) {
-      setCurrentTab('home');
-      setStep(1);
-      setFormData(initialFormData);
-      setGeneratedPrompt('');
+      setAdConfig({
+        startPage: 2,
+        nextTab: 'home',
+        onComplete: () => {
+          setStep(1);
+          setFormData(initialFormData);
+          setGeneratedPrompt('');
+          setGeneratedNoteId(null);
+        }
+      });
+      setCurrentTab('ad_view');
     } else {
       setStep(step + 1);
     }
@@ -1323,15 +1338,21 @@ Return ONLY the generated prompt text in Markdown format. Do not include any con
                 </button>
                 <button
                   onClick={() => {
-                    if (generatedNoteId) {
-                      const noteToEdit = history.find(h => h.id === generatedNoteId) || {
-                        id: generatedNoteId,
-                        topic: formData.appName || formData.topic || 'Untitled App',
-                        prompt: generatedPrompt
-                      };
-                      setEditingNote(noteToEdit);
-                      setCurrentTab('notes');
-                    }
+                    setAdConfig({
+                      startPage: 2,
+                      nextTab: 'notes',
+                      onComplete: () => {
+                        if (generatedNoteId) {
+                          const noteToEdit = history.find(h => h.id === generatedNoteId) || {
+                            id: generatedNoteId,
+                            topic: formData.appName || formData.topic || 'Untitled App',
+                            prompt: generatedPrompt
+                          };
+                          setEditingNote(noteToEdit);
+                        }
+                      }
+                    });
+                    setCurrentTab('ad_view');
                   }}
                   className="px-6 py-4 rounded-2xl font-bold text-white shadow-lg flex items-center justify-center transition-all active:scale-[0.98] bg-[#161423] hover:bg-[#1C1A2D] border border-white/10"
                 >
