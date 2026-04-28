@@ -14,6 +14,49 @@ const translations: any = {
   fr: { home: 'Accueil', notes: 'Notes', builder: 'Créateur', history: 'Historique', settings: 'Paramètres', about: 'À propos', createPrompt: 'Créer Prompt', recent: 'Récent', viewAll: 'Voir Tout', startProject: 'Démarrer un projet', noHistory: 'Aucun historique.' }
 };
 
+const CrownCoinIcon = ({ className = '', size = 24 }: { className?: string, size?: number }) => (
+  <svg 
+    width={size} 
+    height={size} 
+    viewBox="0 0 120 120" 
+    fill="none" 
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+    style={{ filter: 'drop-shadow(0px 4px 6px rgba(0,0,0,0.3))' }}
+  >
+    <circle cx="60" cy="60" r="56" fill="url(#outer-grad)" />
+    <circle cx="60" cy="60" r="48" fill="url(#inner-grad)" />
+    <circle cx="60" cy="60" r="48" stroke="url(#edge-grad)" strokeWidth="3" />
+    <path 
+      d="M35 75 L40 40 L60 55 L80 40 L85 75 Z" 
+      fill="url(#crown-grad)" 
+      stroke="#D4AF37" 
+      strokeWidth="2" 
+      strokeLinejoin="round" 
+    />
+    <defs>
+      <linearGradient id="outer-grad" x1="0" y1="0" x2="120" y2="120" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stopColor="#FFF280" />
+        <stop offset="50%" stopColor="#FFC837" />
+        <stop offset="100%" stopColor="#CC8400" />
+      </linearGradient>
+      <linearGradient id="inner-grad" x1="10" y1="10" x2="110" y2="110" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stopColor="#FFE066" />
+        <stop offset="50%" stopColor="#FFB300" />
+        <stop offset="100%" stopColor="#E69500" />
+      </linearGradient>
+      <linearGradient id="edge-grad" x1="12" y1="12" x2="108" y2="108" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.6"/>
+        <stop offset="100%" stopColor="#000000" stopOpacity="0.2"/>
+      </linearGradient>
+      <linearGradient id="crown-grad" x1="35" y1="40" x2="85" y2="75" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stopColor="#FFF280" />
+        <stop offset="100%" stopColor="#D4AF37" />
+      </linearGradient>
+    </defs>
+  </svg>
+);
+
 const AdsterraBanner = () => {
   return (
     <div className="w-full flex justify-center my-6 overflow-hidden">
@@ -144,20 +187,38 @@ export default function App() {
     setHistory(history.filter(h => h.id !== id));
   };
 
+  const handleStartNew = () => {
+    setEditData(null);
+    localStorage.removeItem('builder_step');
+    localStorage.removeItem('builder_formData');
+    localStorage.removeItem('builder_generatedPrompt');
+    localStorage.removeItem('builder_generatedNoteId');
+    // Important: we need to trigger BuilderPage to reset its state, we can use an event or a unique `editData` value. 
+    // Setting editData to a special object:
+    setEditData({ isNew: true });
+    setCurrentTab('builder');
+  };
+
+  const handleResetApp = () => {
+    localStorage.clear();
+    localStorage.setItem('credits', '5');
+    window.location.reload();
+  };
+
   const t = translations[language] || translations.en;
 
   return (
     <div className={`min-h-screen bg-[#05030A] text-white font-sans selection:bg-purple-500/30 font-inter ${theme === 'light' ? 'light-theme' : ''}`}>
       <AnimatePresence mode="wait">
-        {currentTab === 'home' && <HomePage key="home" setCurrentTab={setCurrentTab} history={history} setEditData={setEditData} credits={credits} setCredits={setCredits} t={t} setAdConfig={setAdConfig} />}
+        {currentTab === 'home' && <HomePage key="home" setCurrentTab={setCurrentTab} history={history} setEditData={setEditData} credits={credits} setCredits={setCredits} t={t} setAdConfig={setAdConfig} onStartNew={handleStartNew} />}
         {currentTab === 'notes' && <NotesPage key="notes" history={history} setHistory={setHistory} editingNote={editingNote} setEditingNote={setEditingNote} t={t} />}
         {currentTab === 'builder' && <BuilderPage key="builder" setCurrentTab={setCurrentTab} history={history} setHistory={setHistory} editData={editData} setEditData={setEditData} setEditingNote={setEditingNote} credits={credits} setCredits={setCredits} t={t} setAdConfig={setAdConfig} />}
         {currentTab === 'history' && <HistoryPage key="history" history={history} onEdit={handleEdit} onDelete={handleDelete} t={t} />}
-        {currentTab === 'settings' && <SettingsPage key="settings" theme={theme} setTheme={setTheme} language={language} setLanguage={setLanguage} setCurrentTab={setCurrentTab} t={t} apiKey={globalApiKey} setApiKey={setGlobalApiKey} />}
+        {currentTab === 'settings' && <SettingsPage key="settings" theme={theme} setTheme={setTheme} language={language} setLanguage={setLanguage} setCurrentTab={setCurrentTab} t={t} apiKey={globalApiKey} setApiKey={setGlobalApiKey} onResetApp={handleResetApp} />}
         {currentTab === 'about' && <AboutPage key="about" setCurrentTab={setCurrentTab} t={t} />}
         {currentTab === 'ad_view' && <AdViewPage key="ad_view" setCurrentTab={setCurrentTab} setCredits={setCredits} adConfig={adConfig} />}
       </AnimatePresence>
-      {currentTab !== 'ad_view' && <BottomNav currentTab={currentTab} setCurrentTab={setCurrentTab} t={t} />}
+      {currentTab !== 'ad_view' && <BottomNav currentTab={currentTab} setCurrentTab={setCurrentTab} t={t} onStartNew={handleStartNew} />}
 
       {!globalApiKey && !showGlobalApiPopup && (
         <div className="fixed bottom-24 left-4 right-4 bg-[#EF4444] text-white p-4 rounded-2xl text-center shadow-lg shadow-red-500/20 backdrop-blur-md z-[55] flex flex-col items-center justify-center gap-3 border border-white/10">
@@ -217,7 +278,7 @@ export default function App() {
   );
 }
 
-const BottomNav = ({ currentTab, setCurrentTab, t }: { currentTab: string, setCurrentTab: (tab: string) => void, t: any }) => {
+const BottomNav = ({ currentTab, setCurrentTab, t, onStartNew }: { currentTab: string, setCurrentTab: (tab: string) => void, t: any, onStartNew: () => void }) => {
   const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
 
   useEffect(() => {
@@ -249,7 +310,7 @@ const BottomNav = ({ currentTab, setCurrentTab, t }: { currentTab: string, setCu
         {/* FAB */}
         <div className="relative -top-5">
           <button 
-            onClick={() => setCurrentTab('builder')}
+            onClick={onStartNew}
             className={`rounded-full p-1 bg-gradient-to-b from-[#2A253C] to-[#120F1C] border border-white/20 shadow-[0_8px_30px_rgba(168,85,247,0.5)] transition-all hover:scale-110 active:scale-95 ${currentTab === 'builder' ? 'ring-2 ring-purple-500 shadow-[0_0_30px_rgba(168,85,247,0.8)]' : ''}`}
           >
             <img 
@@ -333,14 +394,13 @@ const AdViewPage = ({ setCurrentTab, setCredits, adConfig }: any) => {
   );
 };
 
-const HomePage = ({ setCurrentTab, history, setEditData, credits, setCredits, t, setAdConfig }: any) => {
+const HomePage = ({ setCurrentTab, history, setEditData, credits, setCredits, t, setAdConfig, onStartNew }: any) => {
   const [showStartOptions, setShowStartOptions] = useState(false);
   const [showCreditsModal, setShowCreditsModal] = useState(false);
 
   const startNewProject = () => {
-    setEditData(null);
     setShowStartOptions(false);
-    setCurrentTab('builder');
+    onStartNew();
   };
 
   const openOldProject = (item: any) => {
@@ -364,9 +424,9 @@ const HomePage = ({ setCurrentTab, history, setEditData, credits, setCredits, t,
         </div>
         <div 
           onClick={() => setShowCreditsModal(true)}
-          className="flex items-center gap-1.5 bg-[#161423] border border-yellow-500/30 px-3 py-1.5 rounded-full cursor-pointer hover:bg-[#1C1A2D] transition-colors"
+          className="flex items-center gap-1.5 bg-[#161423] border border-yellow-500/30 px-3 py-1.5 rounded-full cursor-pointer hover:bg-[#1C1A2D] transition-colors shadow-lg shadow-yellow-500/5 group"
         >
-          <Coins size={16} className="text-yellow-400" />
+          <CrownCoinIcon size={18} className="group-hover:scale-110 transition-transform drop-shadow-[0_0_8px_rgba(255,215,0,0.5)]" />
           <span className="font-bold text-yellow-100 text-sm">{credits}</span>
         </div>
       </header>
@@ -378,8 +438,8 @@ const HomePage = ({ setCurrentTab, history, setEditData, credits, setCredits, t,
               <div className="p-6">
                 <div className="flex justify-between items-start mb-6">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-full bg-yellow-500/10 flex items-center justify-center">
-                      <Coins size={24} className="text-yellow-400" />
+                    <div className="w-12 h-12 rounded-full bg-yellow-500/10 flex items-center justify-center p-1 border border-yellow-500/20 shadow-inner">
+                      <CrownCoinIcon size={28} className="drop-shadow-[0_0_12px_rgba(255,215,0,0.4)]" />
                     </div>
                     <div>
                       <h3 className="text-xl font-bold text-white">Your Credits</h3>
@@ -849,8 +909,15 @@ const BuilderPage = ({ setCurrentTab, history, setHistory, editData, setEditData
 
   useEffect(() => {
     if (editData) {
-      setFormData({ ...initialFormData, ...(editData.formData || editData) });
-      setStep(1);
+      if (editData.isNew) {
+        setFormData(initialFormData);
+        setStep(1);
+        setGeneratedPrompt('');
+        setGeneratedNoteId(null);
+      } else {
+        setFormData({ ...initialFormData, ...(editData.formData || editData) });
+        setStep(1);
+      }
       setTimeout(() => setEditData(null), 0);
     }
   }, [editData, setEditData]);
@@ -1449,12 +1516,13 @@ const HistoryPage = ({ history, onEdit, onDelete, t }: any) => (
   </motion.div>
 );
 
-const SettingsPage = ({ theme, setTheme, language, setLanguage, setCurrentTab, t, apiKey, setApiKey }: any) => {
+const SettingsPage = ({ theme, setTheme, language, setLanguage, setCurrentTab, t, apiKey, setApiKey, onResetApp }: any) => {
   const [name, setName] = useState(() => localStorage.getItem('userName') || 'Jaival Pandya');
   const [isEditingName, setIsEditingName] = useState(false);
   const [tempName, setTempName] = useState(name);
   
   const [isEditingApiKey, setIsEditingApiKey] = useState(false);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [tempApiKey, setTempApiKey] = useState(apiKey || '');
 
   const toggleTheme = () => setTheme(theme === 'dark' ? 'light' : 'dark');
@@ -1532,11 +1600,52 @@ const SettingsPage = ({ theme, setTheme, language, setLanguage, setCurrentTab, t
 
       <AdsterraBanner />
 
-      <button className="w-full py-4 rounded-2xl bg-red-500/5 text-red-500 font-medium border border-red-500/10 flex items-center justify-center hover:bg-red-500/10 transition-colors mb-6">
-        <LogOut size={18} className="mr-2" /> Sign Out
+      <button 
+        onClick={() => setShowResetConfirm(true)}
+        className="w-full py-4 rounded-2xl bg-red-500/5 text-red-500 font-medium border border-red-500/10 flex items-center justify-center hover:bg-red-500/10 transition-colors mb-6"
+      >
+        <AlertTriangle size={18} className="mr-2" /> Reset App
       </button>
 
       <AnimatePresence>
+        {showResetConfirm && (
+          <motion.div 
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-sm p-6"
+          >
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-[#120F1C] border border-red-500/20 rounded-3xl p-6 w-full max-w-sm shadow-2xl"
+            >
+              <div className="flex flex-col items-center text-center mb-6">
+                <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center mb-4 text-red-500">
+                  <AlertTriangle size={32} />
+                </div>
+                <h3 className="text-xl font-bold text-white mb-2">Reset Application?</h3>
+                <p className="text-gray-400 text-sm">This will clear all your history, settings, and generated prompts. It cannot be undone.</p>
+                <p className="text-yellow-400 text-sm mt-3 font-medium bg-yellow-400/10 px-3 py-1.5 rounded-full border border-yellow-400/20">
+                  Bonus: You will receive 5 credits!
+                </p>
+              </div>
+              
+              <div className="flex gap-3">
+                <button 
+                  onClick={() => setShowResetConfirm(false)}
+                  className="flex-1 py-3 rounded-2xl bg-[#1A1A1A] hover:bg-white/10 text-white font-medium transition-colors border border-white/5"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={onResetApp}
+                  className="flex-1 py-3 rounded-2xl bg-red-500 hover:bg-red-600 text-white font-bold transition-colors shadow-lg shadow-red-500/20"
+                >
+                  Reset App
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+
         {isEditingName && (
           <motion.div 
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
