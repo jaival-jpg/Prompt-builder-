@@ -1,0 +1,13 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // We allow read and write for the admin and user stats because 
+    // there is no strict authentication set up in this template.
+    match /admin/{document=**} {
+      allow read, write: if true;
+    }
+    match /userStats/{document=**} {
+      allow read, write: if true;
+    }
+  }
+}

@@ -7,6 +7,11 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { GoogleGenAI } from '@google/genai';
+import { 
+  monitorAppUpdate, updateAppUpdate, clearAppUpdate, 
+  incrementAdViews, monitorAdViews, 
+  incrementUserOpen, fetchAllUserStats, monitorUserStats 
+} from './firebase-utils';
 
 const translations: any = {
   en: { home: 'Home', notes: 'Notes', builder: 'Builder', history: 'History', settings: 'Settings', about: 'About', createPrompt: 'Create Prompt', recent: 'Recent', viewAll: 'View All', startProject: 'Start a new project', noHistory: 'No history yet.' },
@@ -14,48 +19,7 @@ const translations: any = {
   fr: { home: 'Accueil', notes: 'Notes', builder: 'Créateur', history: 'Historique', settings: 'Paramètres', about: 'À propos', createPrompt: 'Créer Prompt', recent: 'Récent', viewAll: 'Voir Tout', startProject: 'Démarrer un projet', noHistory: 'Aucun historique.' }
 };
 
-const CrownCoinIcon = ({ className = '', size = 24 }: { className?: string, size?: number }) => (
-  <svg 
-    width={size} 
-    height={size} 
-    viewBox="0 0 120 120" 
-    fill="none" 
-    xmlns="http://www.w3.org/2000/svg"
-    className={className}
-    style={{ filter: 'drop-shadow(0px 4px 6px rgba(0,0,0,0.3))' }}
-  >
-    <circle cx="60" cy="60" r="56" fill="url(#outer-grad)" />
-    <circle cx="60" cy="60" r="48" fill="url(#inner-grad)" />
-    <circle cx="60" cy="60" r="48" stroke="url(#edge-grad)" strokeWidth="3" />
-    <path 
-      d="M35 75 L40 40 L60 55 L80 40 L85 75 Z" 
-      fill="url(#crown-grad)" 
-      stroke="#D4AF37" 
-      strokeWidth="2" 
-      strokeLinejoin="round" 
-    />
-    <defs>
-      <linearGradient id="outer-grad" x1="0" y1="0" x2="120" y2="120" gradientUnits="userSpaceOnUse">
-        <stop offset="0%" stopColor="#FFF280" />
-        <stop offset="50%" stopColor="#FFC837" />
-        <stop offset="100%" stopColor="#CC8400" />
-      </linearGradient>
-      <linearGradient id="inner-grad" x1="10" y1="10" x2="110" y2="110" gradientUnits="userSpaceOnUse">
-        <stop offset="0%" stopColor="#FFE066" />
-        <stop offset="50%" stopColor="#FFB300" />
-        <stop offset="100%" stopColor="#E69500" />
-      </linearGradient>
-      <linearGradient id="edge-grad" x1="12" y1="12" x2="108" y2="108" gradientUnits="userSpaceOnUse">
-        <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.6"/>
-        <stop offset="100%" stopColor="#000000" stopOpacity="0.2"/>
-      </linearGradient>
-      <linearGradient id="crown-grad" x1="35" y1="40" x2="85" y2="75" gradientUnits="userSpaceOnUse">
-        <stop offset="0%" stopColor="#FFF280" />
-        <stop offset="100%" stopColor="#D4AF37" />
-      </linearGradient>
-    </defs>
-  </svg>
-);
+
 
 const AdsterraBanner = () => {
   return (
@@ -140,11 +104,65 @@ export default function App() {
     } catch (e) { return null; }
   });
 
+  const [userName, setUserName] = useState(() => localStorage.getItem('userName') || '');
+  const [showNamePopup, setShowNamePopup] = useState(() => !localStorage.getItem('userName'));
+  const [tempUserName, setTempUserName] = useState('');
+
   const [globalApiKey, setGlobalApiKey] = useState(() => localStorage.getItem('user_gemini_api_key') || '');
-  const [showGlobalApiPopup, setShowGlobalApiPopup] = useState(() => !localStorage.getItem('user_gemini_api_key'));
+  // Show API key popup only if we already have the name
+  const [showGlobalApiPopup, setShowGlobalApiPopup] = useState(() => !showNamePopup && !localStorage.getItem('user_gemini_api_key'));
   const [tempGlobalApiKey, setTempGlobalApiKey] = useState(globalApiKey);
 
   const [credits, setCredits] = useState(() => parseInt(localStorage.getItem('credits') || '5', 10));
+
+  const [appUpdateData, setAppUpdateData] = useState<any>(null);
+  const [showUpdatePopup, setShowUpdatePopup] = useState(false);
+
+  useEffect(() => {
+    // Monitor App Update from Firebase
+    const unsubUpdate = monitorAppUpdate((data) => {
+      if (data) {
+        setAppUpdateData(data);
+        if (data.active && !(window as any).updateShown) {
+          setShowUpdatePopup(true);
+        } else if (!data.active) {
+          setShowUpdatePopup(false);
+        }
+      } else {
+        setAppUpdateData(null);
+        setShowUpdatePopup(false);
+      }
+    });
+
+    return () => {
+      unsubUpdate();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (userName) {
+      // Analytics tracking (User opens per day)
+      const today = new Date().toISOString().split('T')[0];
+      if (!(window as any).appOpenedRecorded) {
+        incrementUserOpen(userName, today);
+        (window as any).appOpenedRecorded = true;
+      }
+
+      if (!globalApiKey && !showGlobalApiPopup) {
+         setShowGlobalApiPopup(true);
+      }
+    }
+  }, [userName]);
+
+  const handleSaveName = () => {
+    if (tempUserName.trim()) {
+      const newName = tempUserName.trim();
+      setUserName(newName);
+      localStorage.setItem('userName', newName);
+      setShowNamePopup(false);
+      // Wait for effect to show Api key popup
+    }
+  };
 
   const handleSaveGlobalApiKey = () => {
     setGlobalApiKey(tempGlobalApiKey);
@@ -217,8 +235,63 @@ export default function App() {
         {currentTab === 'settings' && <SettingsPage key="settings" theme={theme} setTheme={setTheme} language={language} setLanguage={setLanguage} setCurrentTab={setCurrentTab} t={t} apiKey={globalApiKey} setApiKey={setGlobalApiKey} onResetApp={handleResetApp} />}
         {currentTab === 'about' && <AboutPage key="about" setCurrentTab={setCurrentTab} t={t} />}
         {currentTab === 'ad_view' && <AdViewPage key="ad_view" setCurrentTab={setCurrentTab} setCredits={setCredits} adConfig={adConfig} />}
+        {currentTab === 'admin' && <AdminPage key="admin" setCurrentTab={setCurrentTab} />}
       </AnimatePresence>
-      {currentTab !== 'ad_view' && <BottomNav currentTab={currentTab} setCurrentTab={setCurrentTab} t={t} onStartNew={handleStartNew} />}
+      {currentTab !== 'ad_view' && currentTab !== 'admin' && <BottomNav currentTab={currentTab} setCurrentTab={setCurrentTab} t={t} onStartNew={handleStartNew} />}
+
+      <AnimatePresence>
+        {showUpdatePopup && appUpdateData && (
+          <motion.div 
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-6"
+          >
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              className="bg-gradient-to-b from-[#1C1A2D] to-[#120F1C] border border-blue-500/20 rounded-[32px] p-8 w-full max-w-sm shadow-[0_0_50px_rgba(59,130,246,0.3)] relative overflow-hidden"
+            >
+              <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-500 to-purple-500" />
+              <div className="flex justify-center mb-6 mt-2 relative">
+                <div className="absolute inset-0 bg-blue-500/20 blur-xl rounded-full" />
+                <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-500 rounded-3xl flex items-center justify-center shadow-lg relative z-10">
+                  <Sparkles size={36} className="text-white" />
+                </div>
+              </div>
+              
+              <h2 className="text-2xl font-bold text-white text-center mb-2">{appUpdateData.title}</h2>
+              <p className="text-blue-400 text-sm font-semibold text-center uppercase tracking-widest mb-6">Update Available</p>
+              
+              <div className="bg-black/30 rounded-2xl p-5 mb-8 border border-white/5 max-h-40 overflow-y-auto hide-scrollbar">
+                <p className="text-gray-300 text-sm whitespace-pre-wrap leading-relaxed">{appUpdateData.features}</p>
+              </div>
+              
+              <div className="flex flex-col gap-3">
+                <a 
+                  href={appUpdateData.link} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  onClick={() => {
+                    setShowUpdatePopup(false);
+                    // Mark as shown so we don't annoy user on every refresh
+                    (window as any).updateShown = true;
+                  }}
+                  className="w-full py-4 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold text-center shadow-lg hover:shadow-blue-500/25 transition-all text-[15px]"
+                >
+                  Update Now
+                </a>
+                <button 
+                  onClick={() => {
+                    setShowUpdatePopup(false);
+                    (window as any).updateShown = true;
+                  }}
+                  className="w-full py-3 text-gray-500 text-sm font-medium hover:text-white transition-colors"
+                >
+                  Maybe Later
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {!globalApiKey && !showGlobalApiPopup && (
         <div className="fixed bottom-24 left-4 right-4 bg-[#EF4444] text-white p-4 rounded-2xl text-center shadow-lg shadow-red-500/20 backdrop-blur-md z-[55] flex flex-col items-center justify-center gap-3 border border-white/10">
@@ -231,6 +304,45 @@ export default function App() {
           </button>
         </div>
       )}
+
+      <AnimatePresence>
+        {showNamePopup && (
+          <motion.div 
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[70] flex items-center justify-center bg-black/80 backdrop-blur-sm p-6"
+          >
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-[#120F1C] border border-white/10 rounded-3xl p-6 w-full max-w-sm shadow-2xl relative"
+            >
+              <div className="flex flex-col items-center mb-6 mt-2">
+                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-500/20 to-blue-500/20 flex items-center justify-center mb-4">
+                  <Sparkles className="text-purple-400" size={32} />
+                </div>
+                <h3 className="text-xl font-bold text-white text-center">Welcome! ✨</h3>
+                <p className="text-sm text-gray-400 text-center mt-2 leading-relaxed">
+                  Please enter your name to get started.
+                </p>
+              </div>
+              
+              <input 
+                type="text"
+                value={tempUserName}
+                onChange={(e) => setTempUserName(e.target.value)}
+                className="w-full bg-[#05030A] border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 mb-4 font-medium"
+                placeholder="Your Name"
+              />
+              <button 
+                onClick={handleSaveName}
+                disabled={!tempUserName.trim()}
+                className="w-full py-3.5 rounded-xl font-medium text-white bg-gradient-to-r from-purple-600 to-blue-600 shadow-lg shadow-blue-900/20 active:scale-[0.98] transition-transform disabled:opacity-50"
+              >
+                Continue
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {showGlobalApiPopup && (
@@ -266,10 +378,18 @@ export default function App() {
               />
               <button 
                 onClick={handleSaveGlobalApiKey}
-                className="w-full py-3.5 rounded-xl font-medium text-white bg-gradient-to-r from-purple-600 to-blue-600 shadow-lg shadow-blue-900/20 active:scale-[0.98] transition-transform"
+                className="w-full py-3.5 rounded-xl font-medium text-white bg-gradient-to-r from-purple-600 to-blue-600 shadow-lg shadow-blue-900/20 active:scale-[0.98] transition-transform mb-3"
               >
                 Save API Key
               </button>
+              <a 
+                href="https://aistudio.google.com/app/api-keys"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full py-3.5 rounded-xl font-medium text-white bg-white/5 border border-white/10 hover:bg-white/10 flex items-center justify-center transition-colors shadow-sm"
+              >
+                Create API Key
+              </a>
             </motion.div>
           </motion.div>
         )}
@@ -338,6 +458,11 @@ const NavItem = ({ icon, label, isActive, onClick }: any) => (
 const AdViewPage = ({ setCurrentTab, setCredits, adConfig }: any) => {
   const [page, setPage] = useState(adConfig?.startPage || 1);
   const [timeLeft, setTimeLeft] = useState(10);
+
+  useEffect(() => {
+    // Analytics tracking (Ad page views)
+    incrementAdViews();
+  }, [page]);
 
   useEffect(() => {
     if (timeLeft > 0) {
@@ -426,7 +551,7 @@ const HomePage = ({ setCurrentTab, history, setEditData, credits, setCredits, t,
           onClick={() => setShowCreditsModal(true)}
           className="flex items-center gap-1.5 bg-[#161423] border border-yellow-500/30 px-3 py-1.5 rounded-full cursor-pointer hover:bg-[#1C1A2D] transition-colors shadow-lg shadow-yellow-500/5 group"
         >
-          <CrownCoinIcon size={18} className="group-hover:scale-110 transition-transform drop-shadow-[0_0_8px_rgba(255,215,0,0.5)]" />
+          <span className="text-xl group-hover:scale-110 transition-transform origin-center">🪙</span>
           <span className="font-bold text-yellow-100 text-sm">{credits}</span>
         </div>
       </header>
@@ -439,7 +564,7 @@ const HomePage = ({ setCurrentTab, history, setEditData, credits, setCredits, t,
                 <div className="flex justify-between items-start mb-6">
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 rounded-full bg-yellow-500/10 flex items-center justify-center p-1 border border-yellow-500/20 shadow-inner">
-                      <CrownCoinIcon size={28} className="drop-shadow-[0_0_12px_rgba(255,215,0,0.4)]" />
+                      <span className="text-2xl drop-shadow-[0_0_12px_rgba(255,215,0,0.4)]">🪙</span>
                     </div>
                     <div>
                       <h3 className="text-xl font-bold text-white">Your Credits</h3>
@@ -860,11 +985,25 @@ const BuilderPage = ({ setCurrentTab, history, setHistory, editData, setEditData
   const totalSteps = 8;
   const [copied, setCopied] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [loadingText, setLoadingText] = useState('Reading....');
   const [generatedPrompt, setGeneratedPrompt] = useState(() => localStorage.getItem('builder_generatedPrompt') || '');
   const [generatedNoteId, setGeneratedNoteId] = useState<number | null>(() => {
     const saved = localStorage.getItem('builder_generatedNoteId');
     return saved ? parseInt(saved, 10) : null;
   });
+
+  useEffect(() => {
+    if (isGenerating) {
+      let stepIdx = 0;
+      const steps = ['Reading....', 'Working....', 'Writing....'];
+      setLoadingText(steps[stepIdx]);
+      const interval = setInterval(() => {
+        stepIdx = Math.min(stepIdx + 1, steps.length - 1);
+        setLoadingText(steps[stepIdx]);
+      }, 1500);
+      return () => clearInterval(interval);
+    }
+  }, [isGenerating]);
 
   const initialFormData = {
     appName: '',
@@ -957,7 +1096,8 @@ const BuilderPage = ({ setCurrentTab, history, setHistory, editData, setEditData
       setStep(step + 1);
       try {
         const userApiKey = localStorage.getItem('user_gemini_api_key');
-        const ai = new GoogleGenAI({ apiKey: userApiKey || (import.meta as any).env?.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY });
+        const apiKeyToUse = userApiKey || process.env.GEMINI_API_KEY;
+        const ai = new GoogleGenAI({ apiKey: apiKeyToUse });
         const systemInstruction = `You are an expert AI prompt engineer and senior software architect. 
 The user will provide basic details for an application they want to build. 
 Your job is to expand these minimum details into a highly detailed, comprehensive, and structured prompt that can be fed directly into an AI coding assistant (like Lovable, Cursor, Bolt, or ChatGPT).
@@ -1367,7 +1507,7 @@ Return ONLY the generated prompt text in Markdown format. Do not include any con
                         <Sparkles className="absolute inset-0 m-auto animate-pulse text-purple-400" size={24} />
                       </div>
                       <p className="text-sm font-bold animate-pulse tracking-widest uppercase bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-blue-400">
-                        Generating Prompt...
+                        {loadingText}
                       </p>
                     </div>
                   ) : (
@@ -1517,7 +1657,7 @@ const HistoryPage = ({ history, onEdit, onDelete, t }: any) => (
 );
 
 const SettingsPage = ({ theme, setTheme, language, setLanguage, setCurrentTab, t, apiKey, setApiKey, onResetApp }: any) => {
-  const [name, setName] = useState(() => localStorage.getItem('userName') || 'Jaival Pandya');
+  const [name, setName] = useState(() => localStorage.getItem('userName') || '');
   const [isEditingName, setIsEditingName] = useState(false);
   const [tempName, setTempName] = useState(name);
   
@@ -1713,42 +1853,250 @@ const SettingsPage = ({ theme, setTheme, language, setLanguage, setCurrentTab, t
   );
 };
 
-const AboutPage = ({ setCurrentTab, t }: any) => (
-  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="p-6 pb-32">
-    <header className="flex items-center mb-8 mt-4">
-      <button onClick={() => setCurrentTab('settings')} className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center mr-4 text-white hover:bg-white/10 transition-colors">
-        <ArrowLeft size={20} />
-      </button>
-      <h1 className="text-3xl font-bold text-white tracking-tight">{t.about}</h1>
-    </header>
+const AboutPage = ({ setCurrentTab, t }: any) => {
+  const [showAdminLogin, setShowAdminLogin] = useState(false);
+  const [adminPassword, setAdminPassword] = useState('');
+  const [error, setError] = useState('');
 
-    <div className="bg-[#120F1C] border border-white/5 rounded-[28px] p-8 mb-8 text-center shadow-lg shadow-black/20">
-      <div className="w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-[0_0_20px_rgba(139,92,246,0.4)] overflow-hidden">
-        <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhiP8PtPcn_lYed8oigp1S0lt3qnSwtz0ifjHgxc3iKF01mdzKLRtm5Bq8gjxQd4-j69avgRw_AmPYyonScYLVsoXQ0tYn-AyRfnRGPEaoVcCucFH6M6j_gLA7pbPkbEfP2mv6qEkoI4I07ZDs-b_dnX85SgV4qM2lIekCWSJeilBojFT1x7vpVD5VTR5D2/s1120/45435.png" alt="Robot" className="w-full h-full object-cover rounded-3xl" />
+  const handleAdminLogin = () => {
+    if (adminPassword === 'jaivalpandya@123') {
+      setShowAdminLogin(false);
+      setAdminPassword('');
+      setError('');
+      setCurrentTab('admin');
+    } else {
+      setError('Incorrect password');
+    }
+  };
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="p-6 pb-32">
+      <header className="flex items-center mb-8 mt-4">
+        <button onClick={() => setCurrentTab('settings')} className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center mr-4 text-white hover:bg-white/10 transition-colors">
+          <ArrowLeft size={20} />
+        </button>
+        <h1 className="text-3xl font-bold text-white tracking-tight">{t.about}</h1>
+      </header>
+
+      <div className="bg-[#120F1C] border border-white/5 rounded-[28px] p-8 mb-8 text-center shadow-lg shadow-black/20">
+        <div className="w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-[0_0_20px_rgba(139,92,246,0.4)] overflow-hidden">
+          <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhiP8PtPcn_lYed8oigp1S0lt3qnSwtz0ifjHgxc3iKF01mdzKLRtm5Bq8gjxQd4-j69avgRw_AmPYyonScYLVsoXQ0tYn-AyRfnRGPEaoVcCucFH6M6j_gLA7pbPkbEfP2mv6qEkoI4I07ZDs-b_dnX85SgV4qM2lIekCWSJeilBojFT1x7vpVD5VTR5D2/s1120/45435.png" alt="Robot" className="w-full h-full object-cover rounded-3xl" />
+        </div>
+        <h2 className="text-2xl font-bold text-white mb-2">Prompt Builder</h2>
+        <p className="text-gray-400 text-sm mb-6">Version 2.0.0</p>
+        
+        <p className="text-gray-300 text-sm leading-relaxed mb-6">
+          Prompt Builder is an advanced AI-powered tool designed to help developers and creators craft the perfect prompts for AI coding assistants.
+        </p>
+
+        <div className="flex justify-center gap-4 text-gray-500">
+          <a href="#" className="hover:text-purple-400 transition-colors">Terms of Service</a>
+          <span>•</span>
+          <a href="#" className="hover:text-purple-400 transition-colors">Privacy Policy</a>
+        </div>
       </div>
-      <h2 className="text-2xl font-bold text-white mb-2">Prompt Builder</h2>
-      <p className="text-gray-400 text-sm mb-6">Version 2.0.0</p>
-      
-      <p className="text-gray-300 text-sm leading-relaxed mb-6">
-        Prompt Builder is an advanced AI-powered tool designed to help developers and creators craft the perfect prompts for AI coding assistants.
-      </p>
 
-      <div className="flex justify-center gap-4 text-gray-500">
-        <a href="#" className="hover:text-purple-400 transition-colors">Terms of Service</a>
-        <span>•</span>
-        <a href="#" className="hover:text-purple-400 transition-colors">Privacy Policy</a>
+      <AdsterraBanner />
+
+      <div className="text-center text-gray-600 text-xs mt-6 relative">
+        <p>© 2026 Prompt Builder. All rights reserved.</p>
+        <p className="mt-1">Developed by Jaival Pandya</p>
+        <p className="mt-1">Powered by Jaival Pandya</p>
+        <div 
+          onClick={() => setShowAdminLogin(true)}
+          className="absolute bottom-0 left-0 right-0 h-10 cursor-default"
+          style={{ opacity: 0 }}
+        />
       </div>
-    </div>
 
-    <AdsterraBanner />
+      <AnimatePresence>
+        {showAdminLogin && (
+          <motion.div 
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[70] flex items-center justify-center bg-black/80 backdrop-blur-sm p-6"
+          >
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-[#120F1C] border border-red-500/20 rounded-3xl p-6 w-full max-w-sm shadow-2xl"
+            >
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-bold text-red-500 flex items-center gap-2">
+                  <Shield size={20} /> Admin Area
+                </h3>
+                <button onClick={() => setShowAdminLogin(false)} className="text-gray-400 hover:text-white">
+                  <X size={20} />
+                </button>
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <input
+                    type="password"
+                    value={adminPassword}
+                    onChange={(e) => setAdminPassword(e.target.value)}
+                    placeholder="Enter security password"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:ring-2 focus:ring-red-500/50"
+                  />
+                  {error && <p className="text-red-400 text-xs mt-2">{error}</p>}
+                </div>
+                <button
+                  onClick={handleAdminLogin}
+                  className="w-full py-3 rounded-xl bg-red-500 hover:bg-red-600 text-white font-bold transition-colors"
+                >
+                  Verify
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  );
+};
 
-    <div className="text-center text-gray-600 text-xs mt-6">
-      <p>© 2026 Prompt Builder. All rights reserved.</p>
-      <p className="mt-1">Developed by Jaival Pandya</p>
-      <p className="mt-1">Powered by Jaival Pandya</p>
-    </div>
-  </motion.div>
-);
+const AdminPage = ({ setCurrentTab }: any) => {
+  const [activeAdminTab, setActiveAdminTab] = useState<'home'|'userData'|'userActivity'|'appUpdate'>('home');
+  const [updateForm, setUpdateForm] = useState({ title: '', features: '', link: '' });
+  
+  const [userData, setUserData] = useState<any>({});
+  const [adViews, setAdViews] = useState(0);
+
+  useEffect(() => {
+    let unsubUser = () => {};
+    let unsubAd = () => {};
+
+    if (activeAdminTab === 'userData' || activeAdminTab === 'home') {
+      unsubUser = monitorUserStats((stats) => {
+        setUserData(stats);
+      });
+    }
+    if (activeAdminTab === 'userActivity' || activeAdminTab === 'home') {
+      unsubAd = monitorAdViews((views) => {
+        setAdViews(views);
+      });
+    }
+
+    return () => {
+      unsubUser();
+      unsubAd();
+    };
+  }, [activeAdminTab]);
+
+  const handleUpdatePublish = async () => {
+    if (!updateForm.title || !updateForm.link) return alert('Title and Link are required');
+    try {
+      await updateAppUpdate({
+        ...updateForm,
+        active: true,
+        timestamp: Date.now()
+      });
+      alert('Update published successfully! Users will see it on app launch.');
+      setUpdateForm({ title: '', features: '', link: '' });
+      setActiveAdminTab('home');
+    } catch (error) {
+      alert('Error publishing update: ' + String(error));
+    }
+  };
+
+  const clearUpdate = async () => {
+    try {
+      await clearAppUpdate();
+      alert('Active update cleared.');
+    } catch (error) {
+       alert('Error clearing update: ' + String(error));
+    }
+  };
+
+  return (
+    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="min-h-screen bg-[#05030A] text-white p-6 pb-32">
+      <header className="flex items-center mb-8 mt-4">
+        <button onClick={() => activeAdminTab === 'home' ? setCurrentTab('home') : setActiveAdminTab('home')} className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center mr-4 text-white hover:bg-white/10 transition-colors">
+          <ArrowLeft size={20} />
+        </button>
+        <h1 className="text-3xl font-bold text-red-500 flex items-center gap-2 tracking-tight">
+          <Shield size={28} /> Admin Panel
+        </h1>
+      </header>
+
+      {activeAdminTab === 'home' && (
+        <div className="grid grid-cols-1 gap-4">
+          <div onClick={() => setActiveAdminTab('userData')} className="bg-[#120F1C] border border-white/5 hover:border-red-500/30 rounded-2xl p-6 cursor-pointer transition-all shadow-lg">
+            <h2 className="text-xl font-bold text-white mb-2 flex items-center gap-2"><SettingsIcon size={20} className="text-blue-400" /> User Data</h2>
+            <p className="text-gray-400 text-sm">View user logins and daily active sessions.</p>
+          </div>
+          <div onClick={() => setActiveAdminTab('userActivity')} className="bg-[#120F1C] border border-white/5 hover:border-red-500/30 rounded-2xl p-6 cursor-pointer transition-all shadow-lg">
+            <h2 className="text-xl font-bold text-white mb-2 flex items-center gap-2"><PlayCircle size={20} className="text-green-400" /> User Activity</h2>
+            <p className="text-gray-400 text-sm">Monitor ad impressions and page views.</p>
+          </div>
+          <div onClick={() => setActiveAdminTab('appUpdate')} className="bg-[#120F1C] border border-white/5 hover:border-red-500/30 rounded-2xl p-6 cursor-pointer transition-all shadow-lg">
+            <h2 className="text-xl font-bold text-white mb-2 flex items-center gap-2"><Check size={20} className="text-yellow-400" /> App Update Popup</h2>
+            <p className="text-gray-400 text-sm">Publish new application updates.</p>
+          </div>
+        </div>
+      )}
+
+      {activeAdminTab === 'userData' && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+          <h2 className="text-xl font-bold text-white mb-4">User Data</h2>
+          {Object.keys(userData).length === 0 ? <p className="text-gray-500">No user data recorded yet.</p> : null}
+          {Object.keys(userData).map(username => (
+            <div key={username} className="bg-[#120F1C] border border-white/5 rounded-xl p-4">
+              <h3 className="font-bold text-white mb-2 text-lg">{username}</h3>
+              <div className="space-y-2">
+                {Object.entries(userData[username].opens || {}).map(([date, count]) => (
+                  <div key={date} className="flex justify-between items-center text-sm">
+                    <span className="text-gray-400">{date}</span>
+                    <span className="bg-purple-500/20 text-purple-400 px-3 py-1 rounded-full font-medium">{String(count)} opens</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </motion.div>
+      )}
+
+      {activeAdminTab === 'userActivity' && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+          <h2 className="text-xl font-bold text-white mb-4">User Activity</h2>
+          <div className="bg-[#120F1C] border border-white/5 rounded-2xl p-6 flex items-center gap-6">
+            <div className="w-16 h-16 rounded-full bg-green-500/10 flex items-center justify-center">
+              <PlayCircle size={32} className="text-green-500" />
+            </div>
+            <div>
+              <p className="text-gray-400 text-sm mb-1">Total Ad Impressions</p>
+              <p className="text-4xl font-bold text-white">{adViews}</p>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
+      {activeAdminTab === 'appUpdate' && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-bold text-white">Publish Update</h2>
+            <button onClick={clearUpdate} className="text-xs bg-red-500/10 text-red-400 px-3 py-1.5 rounded-lg border border-red-500/20 hover:bg-red-500/20">Clear Active Update</button>
+          </div>
+          <div className="space-y-4 bg-[#120F1C] border border-white/5 rounded-2xl p-6">
+            <div>
+              <label className="block text-gray-400 text-sm font-medium mb-1.5">Update Title</label>
+              <input value={updateForm.title} onChange={e => setUpdateForm({...updateForm, title: e.target.value})} placeholder="e.g. Version 2.1 is here!" className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:ring-1 focus:ring-red-500" />
+            </div>
+            <div>
+              <label className="block text-gray-400 text-sm font-medium mb-1.5">New Features</label>
+              <textarea value={updateForm.features} onChange={e => setUpdateForm({...updateForm, features: e.target.value})} placeholder="What's new in this version?" className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:ring-1 focus:ring-red-500 resize-none h-24" />
+            </div>
+            <div>
+              <label className="block text-gray-400 text-sm font-medium mb-1.5">Download Link</label>
+              <input value={updateForm.link} onChange={e => setUpdateForm({...updateForm, link: e.target.value})} placeholder="https://..." className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:ring-1 focus:ring-red-500" />
+            </div>
+            <button onClick={handleUpdatePublish} className="w-full py-4 mt-2 rounded-xl bg-red-500 hover:bg-red-600 text-white font-bold transition-colors shadow-lg shadow-red-500/20">
+              Publish Update to Users
+            </button>
+          </div>
+        </motion.div>
+      )}
+    </motion.div>
+  );
+};
 
 const SettingItem = ({ icon, label, value, onClick }: any) => (
   <div onClick={onClick} className="flex items-center justify-between p-4 px-5 hover:bg-white/5 cursor-pointer transition-colors">
