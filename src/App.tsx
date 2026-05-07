@@ -1167,6 +1167,11 @@ Fields:
 ...
 
 ----------------------------------
+🚀 DEPLOYMENT & HOSTING INSTRUCTIONS
+----------------------------------
+- Specific instructions to make the app easily deployable and professional for hosting (e.g. environment variables setup, build scripts, Vercel/Firebase configuration).
+
+----------------------------------
 🎯 FINAL OUTPUT EXPECTATION
 ----------------------------------
 - Fully working UI (no placeholders)
@@ -1197,7 +1202,7 @@ Return ONLY the generated prompt text in Markdown format. Do not include any con
         `;
 
         const response = await ai.models.generateContent({
-          model: "gemini-3-flash-preview",
+          model: "gemini-2.5-flash",
           contents: userContent,
           config: {
             systemInstruction: systemInstruction,
