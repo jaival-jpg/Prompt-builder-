@@ -12,6 +12,8 @@ import {
   incrementAdViews, monitorAdViews, 
   incrementUserOpen, fetchAllUserStats, monitorUserStats 
 } from './firebase-utils';
+import { auth, googleProvider } from './firebase-setup';
+import { signInWithPopup, onAuthStateChanged, signOut, User } from 'firebase/auth';
 
 const translations: any = {
   en: { home: 'Home', notes: 'Notes', builder: 'Builder', history: 'History', settings: 'Settings', about: 'About', createPrompt: 'Create Prompt', recent: 'Recent', viewAll: 'View All', startProject: 'Start a new project', noHistory: 'No history yet.' },
@@ -104,9 +106,26 @@ export default function App() {
     } catch (e) { return null; }
   });
 
-  const [userName, setUserName] = useState(() => localStorage.getItem('userName') || '');
-  const [showNamePopup, setShowNamePopup] = useState(() => !localStorage.getItem('userName'));
+  const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [userName, setUserName] = useState('');
+  const [showNamePopup, setShowNamePopup] = useState(false);
   const [tempUserName, setTempUserName] = useState('');
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setFirebaseUser(user);
+      if (user) {
+        setUserName(user.displayName || user.email?.split('@')[0] || 'User');
+        setShowNamePopup(false);
+      } else {
+        setShowNamePopup(true);
+      }
+      setAuthLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   const [globalApiKey, setGlobalApiKey] = useState(() => localStorage.getItem('user_gemini_api_key') || '');
   // Show API key popup only if we already have the name
@@ -154,13 +173,13 @@ export default function App() {
     }
   }, [userName]);
 
-  const handleSaveName = () => {
-    if (tempUserName.trim()) {
-      const newName = tempUserName.trim();
-      setUserName(newName);
-      localStorage.setItem('userName', newName);
-      setShowNamePopup(false);
-      // Wait for effect to show Api key popup
+  const handleSignIn = async () => {
+    try {
+      await signInWithPopup(auth, googleProvider);
+      // Wait for effect to update state and hide popup
+    } catch (error) {
+      console.error("Sign in error", error);
+      alert("Failed to sign in. Please try again.");
     }
   };
 
@@ -223,6 +242,14 @@ export default function App() {
     window.location.reload();
   };
 
+  const handleSignOut = async () => {
+    try {
+      await signOut(auth);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   const t = translations[language] || translations.en;
 
   return (
@@ -232,7 +259,7 @@ export default function App() {
         {currentTab === 'notes' && <NotesPage key="notes" history={history} setHistory={setHistory} editingNote={editingNote} setEditingNote={setEditingNote} t={t} />}
         {currentTab === 'builder' && <BuilderPage key="builder" setCurrentTab={setCurrentTab} history={history} setHistory={setHistory} editData={editData} setEditData={setEditData} setEditingNote={setEditingNote} credits={credits} setCredits={setCredits} t={t} setAdConfig={setAdConfig} />}
         {currentTab === 'history' && <HistoryPage key="history" history={history} onEdit={handleEdit} onDelete={handleDelete} t={t} />}
-        {currentTab === 'settings' && <SettingsPage key="settings" theme={theme} setTheme={setTheme} language={language} setLanguage={setLanguage} setCurrentTab={setCurrentTab} t={t} apiKey={globalApiKey} setApiKey={setGlobalApiKey} onResetApp={handleResetApp} />}
+        {currentTab === 'settings' && <SettingsPage key="settings" theme={theme} setTheme={setTheme} language={language} setLanguage={setLanguage} setCurrentTab={setCurrentTab} t={t} apiKey={globalApiKey} setApiKey={setGlobalApiKey} onResetApp={handleResetApp} firebaseUser={firebaseUser} onSignOut={handleSignOut} userName={userName} />}
         {currentTab === 'about' && <AboutPage key="about" setCurrentTab={setCurrentTab} t={t} />}
         {currentTab === 'ad_view' && <AdViewPage key="ad_view" setCurrentTab={setCurrentTab} setCredits={setCredits} adConfig={adConfig} />}
         {currentTab === 'admin' && <AdminPage key="admin" setCurrentTab={setCurrentTab} />}
@@ -321,23 +348,15 @@ export default function App() {
                 </div>
                 <h3 className="text-xl font-bold text-white text-center">Welcome! ✨</h3>
                 <p className="text-sm text-gray-400 text-center mt-2 leading-relaxed">
-                  Please enter your name to get started.
+                  Sign in with your Google account to get started.
                 </p>
               </div>
               
-              <input 
-                type="text"
-                value={tempUserName}
-                onChange={(e) => setTempUserName(e.target.value)}
-                className="w-full bg-[#05030A] border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 mb-4 font-medium"
-                placeholder="Your Name"
-              />
               <button 
-                onClick={handleSaveName}
-                disabled={!tempUserName.trim()}
-                className="w-full py-3.5 rounded-xl font-medium text-white bg-gradient-to-r from-purple-600 to-blue-600 shadow-lg shadow-blue-900/20 active:scale-[0.98] transition-transform disabled:opacity-50"
+                onClick={handleSignIn}
+                className="w-full py-3.5 rounded-xl font-medium text-white bg-gradient-to-r from-purple-600 to-blue-600 shadow-lg shadow-blue-900/20 active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
               >
-                Continue
+                Sign In with Google
               </button>
             </motion.div>
           </motion.div>
@@ -618,14 +637,14 @@ const HomePage = ({ setCurrentTab, history, setEditData, credits, setCredits, t,
       </div>
 
       <div className="grid grid-cols-2 gap-4 mb-8">
-        <div onClick={() => setCurrentTab('notes')} className="bg-[#120F1C] rounded-[24px] p-5 border border-white/5 cursor-pointer hover:bg-[#1A1625] transition-colors">
+        <div onClick={() => setCurrentTab('notes')} className="bg-[#120F1C] rounded-[24px] p-5 border border-white/10 cursor-pointer hover:bg-[#1A1625] transition-all transform hover:-translate-y-1 shadow-[inset_0_1px_2px_rgba(255,255,255,0.15),inset_0_-1px_2px_rgba(0,0,0,0.4),0_8px_20px_rgba(0,0,0,0.5)] hover:shadow-[inset_0_1px_3px_rgba(255,255,255,0.25),inset_0_-1px_2px_rgba(0,0,0,0.5),0_12px_25px_rgba(0,0,0,0.7)]">
           <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center mb-4 text-blue-400">
             <FileText size={20} />
           </div>
           <h3 className="text-white font-semibold mb-1">Prompt Notes</h3>
           <p className="text-gray-500 text-xs">Your saved prompts</p>
         </div>
-        <div onClick={() => setCurrentTab('history')} className="bg-[#120F1C] rounded-[24px] p-5 border border-white/5 cursor-pointer hover:bg-[#1A1625] transition-colors">
+        <div onClick={() => setCurrentTab('history')} className="bg-[#120F1C] rounded-[24px] p-5 border border-white/10 cursor-pointer hover:bg-[#1A1625] transition-all transform hover:-translate-y-1 shadow-[inset_0_1px_2px_rgba(255,255,255,0.15),inset_0_-1px_2px_rgba(0,0,0,0.4),0_8px_20px_rgba(0,0,0,0.5)] hover:shadow-[inset_0_1px_3px_rgba(255,255,255,0.25),inset_0_-1px_2px_rgba(0,0,0,0.5),0_12px_25px_rgba(0,0,0,0.7)]">
           <div className="w-10 h-10 rounded-full bg-yellow-500/10 flex items-center justify-center mb-4 text-yellow-500">
             <History size={20} />
           </div>
@@ -644,7 +663,7 @@ const HomePage = ({ setCurrentTab, history, setEditData, credits, setCredits, t,
         {history && history.length > 0 ? (
           <div className="space-y-3">
             {history.slice(0, 2).map((item: any) => (
-              <div key={item.id} onClick={() => setCurrentTab('history')} className="bg-[#120F1C] rounded-2xl p-4 border border-white/5 cursor-pointer hover:border-white/10 transition-colors">
+              <div key={item.id} onClick={() => setCurrentTab('history')} className="bg-[#120F1C] rounded-2xl p-4 border border-white/10 cursor-pointer hover:border-white/20 hover:bg-[#1A1625] transition-all transform hover:-translate-y-1 shadow-[inset_0_1px_2px_rgba(255,255,255,0.15),inset_0_-1px_2px_rgba(0,0,0,0.4),0_8px_20px_rgba(0,0,0,0.5)] hover:shadow-[inset_0_1px_3px_rgba(255,255,255,0.25),inset_0_-1px_2px_rgba(0,0,0,0.5),0_12px_25px_rgba(0,0,0,0.7)]">
                 <h4 className="text-white font-medium text-sm truncate">{item.topic}</h4>
                 <p className="text-gray-500 text-xs mt-1 truncate">{item.prompt}</p>
               </div>
@@ -930,7 +949,7 @@ const NotesPage = ({ history, setHistory, editingNote, setEditingNote, t }: any)
               <div 
                 key={item.id} 
                 onClick={() => setEditingNote(item)}
-                className="break-inside-avoid bg-[#161423] rounded-[24px] p-5 cursor-pointer hover:bg-[#1C1A2D] transition-colors relative flex flex-col min-h-[160px]"
+                className="break-inside-avoid bg-[#161423] rounded-[24px] p-5 cursor-pointer hover:bg-[#1C1A2D] transition-all transform hover:-translate-y-1 relative flex flex-col min-h-[160px] border border-white/10 shadow-[inset_0_1px_2px_rgba(255,255,255,0.15),inset_0_-1px_2px_rgba(0,0,0,0.4),0_8px_20px_rgba(0,0,0,0.5)] hover:shadow-[inset_0_1px_3px_rgba(255,255,255,0.25),inset_0_-1px_2px_rgba(0,0,0,0.5),0_12px_25px_rgba(0,0,0,0.7)]"
               >
                 <h3 className="text-white font-bold text-[15px] mb-3 leading-snug">{item.topic}</h3>
                 <p className="text-gray-400 text-xs whitespace-pre-wrap line-clamp-5 leading-relaxed flex-1">{item.prompt}</p>
@@ -1661,10 +1680,17 @@ const HistoryPage = ({ history, onEdit, onDelete, t }: any) => (
   </motion.div>
 );
 
-const SettingsPage = ({ theme, setTheme, language, setLanguage, setCurrentTab, t, apiKey, setApiKey, onResetApp }: any) => {
-  const [name, setName] = useState(() => localStorage.getItem('userName') || '');
+const SettingsPage = ({ theme, setTheme, language, setLanguage, setCurrentTab, t, apiKey, setApiKey, onResetApp, firebaseUser, onSignOut, userName }: any) => {
+  const [name, setName] = useState(() => userName || localStorage.getItem('userName') || '');
   const [isEditingName, setIsEditingName] = useState(false);
   const [tempName, setTempName] = useState(name);
+  
+  useEffect(() => {
+    if (userName) {
+      setName(userName);
+      setTempName(userName);
+    }
+  }, [userName]);
   
   const [isEditingApiKey, setIsEditingApiKey] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
@@ -1744,6 +1770,15 @@ const SettingsPage = ({ theme, setTheme, language, setLanguage, setCurrentTab, t
       </div>
 
       <AdsterraBanner />
+
+      {firebaseUser && (
+        <button 
+          onClick={onSignOut}
+          className="w-full py-4 rounded-2xl bg-white/5 text-white font-medium border border-white/10 flex items-center justify-center hover:bg-white/10 transition-colors mb-4"
+        >
+          <LogOut size={18} className="mr-2" /> Sign Out from Google
+        </button>
+      )}
 
       <button 
         onClick={() => setShowResetConfirm(true)}
