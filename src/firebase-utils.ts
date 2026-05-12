@@ -9,6 +9,8 @@ export const monitorAppUpdate = (callback: (data: any) => void) => {
     } else {
       callback(null);
     }
+  }, (error) => {
+    console.warn("Firestore listener error (admin/update):", error.message);
   });
 };
 
@@ -38,6 +40,8 @@ export const monitorAdViews = (callback: (views: number) => void) => {
     } else {
       callback(0);
     }
+  }, (error) => {
+    console.warn("Firestore listener error (admin/activity):", error.message);
   });
 };
 
@@ -71,5 +75,7 @@ export const monitorUserStats = (callback: (stats: Record<string, any>) => void)
       stats[doc.id] = doc.data();
     });
     callback(stats);
+  }, (error) => {
+    console.warn("Firestore listener error (userStats):", error.message);
   });
 };

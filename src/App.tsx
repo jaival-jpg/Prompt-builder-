@@ -12,8 +12,8 @@ import {
   incrementAdViews, monitorAdViews, 
   incrementUserOpen, fetchAllUserStats, monitorUserStats 
 } from './firebase-utils';
-import { auth, googleProvider } from './firebase-setup';
-import { signInWithPopup, onAuthStateChanged, signOut, User } from 'firebase/auth';
+import { auth } from './firebase-setup';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, User } from 'firebase/auth';
 
 const translations: any = {
   en: { home: 'Home', notes: 'Notes', builder: 'Builder', history: 'History', settings: 'Settings', about: 'About', createPrompt: 'Create Prompt', recent: 'Recent', viewAll: 'View All', startProject: 'Start a new project', noHistory: 'No history yet.' },
@@ -110,7 +110,9 @@ export default function App() {
   const [authLoading, setAuthLoading] = useState(true);
   const [userName, setUserName] = useState('');
   const [showNamePopup, setShowNamePopup] = useState(false);
-  const [tempUserName, setTempUserName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isSignUp, setIsSignUp] = useState(true);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -173,13 +175,35 @@ export default function App() {
     }
   }, [userName]);
 
-  const handleSignIn = async () => {
+  const handleAuth = async () => {
+    if (!email.trim() || !password.trim()) return;
+
+    if (isSignUp && password.length < 6) {
+      alert("Password should be at least 6 characters.");
+      return;
+    }
+
     try {
-      await signInWithPopup(auth, googleProvider);
-      // Wait for effect to update state and hide popup
-    } catch (error) {
-      console.error("Sign in error", error);
-      alert("Failed to sign in. Please try again.");
+      if (isSignUp) {
+        await createUserWithEmailAndPassword(auth, email.trim(), password);
+      } else {
+        await signInWithEmailAndPassword(auth, email.trim(), password);
+      }
+    } catch (error: any) {
+      console.error("Auth error", error);
+      let errorMessage = error.message;
+      if (error.code === 'auth/invalid-credential') {
+        errorMessage = "Incorrect email or password, or the account does not exist. If you haven't created an account yet, please switch to 'Sign Up'.";
+      } else if (error.code === 'auth/email-already-in-use') {
+        errorMessage = "An account with this email already exists. Switching to Sign In. Please click 'Sign In' to continue.";
+        setIsSignUp(false);
+      } else if (error.code === 'auth/user-not-found') {
+        errorMessage = "No account found with this email. Switching to Sign Up. Please click 'Sign Up' to continue.";
+        setIsSignUp(true);
+      } else if (error.code === 'auth/wrong-password') {
+        errorMessage = "Incorrect password. Please try again.";
+      }
+      alert(`Authentication failed: ${errorMessage}`);
     }
   };
 
@@ -348,16 +372,47 @@ export default function App() {
                 </div>
                 <h3 className="text-xl font-bold text-white text-center">Welcome! ✨</h3>
                 <p className="text-sm text-gray-400 text-center mt-2 leading-relaxed">
-                  Sign in with your Google account to get started.
+                  {isSignUp ? 'Create an account to get started.' : 'Sign in to continue.'}
                 </p>
               </div>
               
+              <div className="space-y-4 mb-6">
+                <div>
+                  <input 
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full bg-[#05030A] border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 font-medium"
+                    placeholder="Email Address"
+                  />
+                </div>
+                <div>
+                  <input 
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full bg-[#05030A] border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 font-medium"
+                    placeholder="Password"
+                  />
+                </div>
+              </div>
+
               <button 
-                onClick={handleSignIn}
-                className="w-full py-3.5 rounded-xl font-medium text-white bg-gradient-to-r from-purple-600 to-blue-600 shadow-lg shadow-blue-900/20 active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
+                onClick={handleAuth}
+                disabled={!email.trim() || !password.trim() || (isSignUp && password.length < 6)}
+                className="w-full py-3.5 rounded-xl font-medium text-white bg-gradient-to-r from-purple-600 to-blue-600 shadow-lg shadow-blue-900/20 active:scale-[0.98] transition-transform flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Sign In with Google
+                {isSignUp ? 'Sign Up' : 'Sign In'}
               </button>
+
+              <div className="mt-4 text-center">
+                <button 
+                  onClick={() => setIsSignUp(!isSignUp)}
+                  className="text-sm text-gray-400 hover:text-white transition-colors"
+                >
+                  {isSignUp ? 'Already have an account? Sign In' : 'Need an account? Sign Up'}
+                </button>
+              </div>
             </motion.div>
           </motion.div>
         )}
@@ -1776,7 +1831,7 @@ const SettingsPage = ({ theme, setTheme, language, setLanguage, setCurrentTab, t
           onClick={onSignOut}
           className="w-full py-4 rounded-2xl bg-white/5 text-white font-medium border border-white/10 flex items-center justify-center hover:bg-white/10 transition-colors mb-4"
         >
-          <LogOut size={18} className="mr-2" /> Sign Out from Google
+          <LogOut size={18} className="mr-2" /> Sign Out
         </button>
       )}
 
