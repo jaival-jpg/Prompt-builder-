@@ -46,10 +46,13 @@ export const monitorAdViews = (callback: (views: number) => void) => {
 };
 
 // Admin / User Stats
-export const incrementUserOpen = async (userName: string, dateStr: string) => {
-  const ref = doc(db, 'userStats', userName);
+export const incrementUserOpen = async (userName: string, email: string, uid: string, dateStr: string) => {
+  const ref = doc(db, 'userStats', uid);
   try {
     await setDoc(ref, {
+      userName,
+      email,
+      uid,
       opens: {
         [dateStr]: increment(1)
       }

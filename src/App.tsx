@@ -13,7 +13,7 @@ import {
   incrementUserOpen, fetchAllUserStats, monitorUserStats 
 } from './firebase-utils';
 import { auth } from './firebase-setup';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, User } from 'firebase/auth';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, User, sendPasswordResetEmail } from 'firebase/auth';
 
 const translations: any = {
   en: { home: 'Home', notes: 'Notes', builder: 'Builder', history: 'History', settings: 'Settings', about: 'About', createPrompt: 'Create Prompt', recent: 'Recent', viewAll: 'View All', startProject: 'Start a new project', noHistory: 'No history yet.' },
@@ -109,19 +109,16 @@ export default function App() {
   const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [userName, setUserName] = useState('');
-  const [showNamePopup, setShowNamePopup] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSignUp, setIsSignUp] = useState(true);
+  const [authError, setAuthError] = useState('');
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setFirebaseUser(user);
       if (user) {
         setUserName(user.displayName || user.email?.split('@')[0] || 'User');
-        setShowNamePopup(false);
-      } else {
-        setShowNamePopup(true);
       }
       setAuthLoading(false);
     });
@@ -130,8 +127,7 @@ export default function App() {
   }, []);
 
   const [globalApiKey, setGlobalApiKey] = useState(() => localStorage.getItem('user_gemini_api_key') || '');
-  // Show API key popup only if we already have the name
-  const [showGlobalApiPopup, setShowGlobalApiPopup] = useState(() => !showNamePopup && !localStorage.getItem('user_gemini_api_key'));
+  const [showGlobalApiPopup, setShowGlobalApiPopup] = useState(() => !localStorage.getItem('user_gemini_api_key'));
   const [tempGlobalApiKey, setTempGlobalApiKey] = useState(globalApiKey);
 
   const [credits, setCredits] = useState(() => parseInt(localStorage.getItem('credits') || '5', 10));
@@ -161,11 +157,15 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (userName) {
+    if (firebaseUser?.email === 'jaivalppp@gmail.com') {
+      setCurrentTab('admin');
+    }
+
+    if (firebaseUser && userName) {
       // Analytics tracking (User opens per day)
       const today = new Date().toISOString().split('T')[0];
       if (!(window as any).appOpenedRecorded) {
-        incrementUserOpen(userName, today);
+        incrementUserOpen(userName, firebaseUser.email || '', firebaseUser.uid, today);
         (window as any).appOpenedRecorded = true;
       }
 
@@ -173,13 +173,14 @@ export default function App() {
          setShowGlobalApiPopup(true);
       }
     }
-  }, [userName]);
+  }, [firebaseUser, userName]);
 
   const handleAuth = async () => {
+    setAuthError('');
     if (!email.trim() || !password.trim()) return;
 
     if (isSignUp && password.length < 6) {
-      alert("Password should be at least 6 characters.");
+      setAuthError("Password should be at least 6 characters.");
       return;
     }
 
@@ -195,15 +196,30 @@ export default function App() {
       if (error.code === 'auth/invalid-credential') {
         errorMessage = "Incorrect email or password, or the account does not exist. If you haven't created an account yet, please switch to 'Sign Up'.";
       } else if (error.code === 'auth/email-already-in-use') {
-        errorMessage = "An account with this email already exists. Switching to Sign In. Please click 'Sign In' to continue.";
+        errorMessage = "Email is already registered. If you previously signed up with Google, please click 'Forgot Password' to create a password for your account. Switching to Sign In.";
         setIsSignUp(false);
       } else if (error.code === 'auth/user-not-found') {
         errorMessage = "No account found with this email. Switching to Sign Up. Please click 'Sign Up' to continue.";
         setIsSignUp(true);
       } else if (error.code === 'auth/wrong-password') {
-        errorMessage = "Incorrect password. Please try again.";
+        errorMessage = "Incorrect password. Please try again or use 'Forgot Password'.";
       }
-      alert(`Authentication failed: ${errorMessage}`);
+      setAuthError(errorMessage);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    setAuthError('');
+    if (!email.trim()) {
+      setAuthError("Please enter your email address in the Email field first.");
+      return;
+    }
+    try {
+      await sendPasswordResetEmail(auth, email.trim());
+      setAuthError("Password reset email sent! Please check your inbox (and spam folder) to set a new password.");
+    } catch (error: any) {
+      console.error("Password reset error", error);
+      setAuthError(`Failed to send password reset email: ${error.message}`);
     }
   };
 
@@ -273,6 +289,85 @@ export default function App() {
       console.error(e);
     }
   };
+
+  if (authLoading) return <div className="min-h-screen bg-[#05030A] flex items-center justify-center text-white">Loading...</div>;
+
+  if (!firebaseUser) {
+    return (
+      <div className="min-h-screen bg-[#05030A] flex items-center justify-center p-4">
+        <motion.div 
+          initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+          className="bg-[#120F1C] border border-white/10 rounded-3xl p-6 w-full max-w-sm shadow-2xl relative"
+        >
+          <div className="flex flex-col items-center mb-6 mt-2">
+            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-500/20 to-blue-500/20 flex items-center justify-center mb-4">
+              <Sparkles className="text-purple-400" size={32} />
+            </div>
+            <h3 className="text-xl font-bold text-white text-center">Welcome! ✨</h3>
+            <p className="text-sm text-gray-400 text-center mt-2 leading-relaxed">
+              {isSignUp ? 'Create an account to get started.' : 'Sign in to continue.'}
+            </p>
+          </div>
+          
+          <div className="space-y-4 mb-6">
+            <div>
+              <input 
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full bg-[#05030A] border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 font-medium"
+                placeholder="Email Address"
+              />
+            </div>
+            <div>
+              <input 
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full bg-[#05030A] border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 font-medium"
+                placeholder="Password"
+              />
+            </div>
+          </div>
+
+          {authError && (
+            <div className="mb-6 p-3 rounded-xl bg-red-500/10 border border-red-500/20">
+              <p className="text-red-400 text-sm text-center">{authError}</p>
+            </div>
+          )}
+
+          <button 
+            onClick={handleAuth}
+            disabled={!email.trim() || !password.trim() || (isSignUp && password.length < 6)}
+            className="w-full py-3.5 rounded-xl font-medium text-white bg-gradient-to-r from-purple-600 to-blue-600 shadow-lg shadow-blue-900/20 active:scale-[0.98] transition-transform flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isSignUp ? 'Sign Up' : 'Sign In'}
+          </button>
+
+          <div className="mt-4 text-center space-y-3">
+            <button 
+              onClick={() => {
+                setIsSignUp(!isSignUp);
+                setAuthError('');
+              }}
+              className="text-sm text-gray-400 hover:text-white transition-colors block w-full"
+            >
+              {isSignUp ? 'Already have an account? Sign In' : 'Need an account? Sign Up'}
+            </button>
+            
+            {!isSignUp && (
+              <button 
+                onClick={handleForgotPassword}
+                className="text-sm text-purple-400 hover:text-purple-300 transition-colors block w-full py-2"
+              >
+                Forgot Password? (Reset if you previously used Google)
+              </button>
+            )}
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
 
   const t = translations[language] || translations.en;
 
@@ -355,68 +450,6 @@ export default function App() {
           </button>
         </div>
       )}
-
-      <AnimatePresence>
-        {showNamePopup && (
-          <motion.div 
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[70] flex items-center justify-center bg-black/80 backdrop-blur-sm p-6"
-          >
-            <motion.div 
-              initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-[#120F1C] border border-white/10 rounded-3xl p-6 w-full max-w-sm shadow-2xl relative"
-            >
-              <div className="flex flex-col items-center mb-6 mt-2">
-                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-500/20 to-blue-500/20 flex items-center justify-center mb-4">
-                  <Sparkles className="text-purple-400" size={32} />
-                </div>
-                <h3 className="text-xl font-bold text-white text-center">Welcome! ✨</h3>
-                <p className="text-sm text-gray-400 text-center mt-2 leading-relaxed">
-                  {isSignUp ? 'Create an account to get started.' : 'Sign in to continue.'}
-                </p>
-              </div>
-              
-              <div className="space-y-4 mb-6">
-                <div>
-                  <input 
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full bg-[#05030A] border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 font-medium"
-                    placeholder="Email Address"
-                  />
-                </div>
-                <div>
-                  <input 
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full bg-[#05030A] border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 font-medium"
-                    placeholder="Password"
-                  />
-                </div>
-              </div>
-
-              <button 
-                onClick={handleAuth}
-                disabled={!email.trim() || !password.trim() || (isSignUp && password.length < 6)}
-                className="w-full py-3.5 rounded-xl font-medium text-white bg-gradient-to-r from-purple-600 to-blue-600 shadow-lg shadow-blue-900/20 active:scale-[0.98] transition-transform flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isSignUp ? 'Sign Up' : 'Sign In'}
-              </button>
-
-              <div className="mt-4 text-center">
-                <button 
-                  onClick={() => setIsSignUp(!isSignUp)}
-                  className="text-sm text-gray-400 hover:text-white transition-colors"
-                >
-                  {isSignUp ? 'Already have an account? Sign In' : 'Need an account? Sign Up'}
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       <AnimatePresence>
         {showGlobalApiPopup && (
@@ -2133,14 +2166,29 @@ const AdminPage = ({ setCurrentTab }: any) => {
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
           <h2 className="text-xl font-bold text-white mb-4">User Data</h2>
           {Object.keys(userData).length === 0 ? <p className="text-gray-500">No user data recorded yet.</p> : null}
-          {Object.keys(userData).map(username => (
-            <div key={username} className="bg-[#120F1C] border border-white/5 rounded-xl p-4">
-              <h3 className="font-bold text-white mb-2 text-lg">{username}</h3>
-              <div className="space-y-2">
-                {Object.entries(userData[username].opens || {}).map(([date, count]) => (
-                  <div key={date} className="flex justify-between items-center text-sm">
-                    <span className="text-gray-400">{date}</span>
-                    <span className="bg-purple-500/20 text-purple-400 px-3 py-1 rounded-full font-medium">{String(count)} opens</span>
+          {Object.values(userData).map((user: any) => (
+            <div key={user.uid || user._id || Math.random()} className="bg-[#120F1C] border border-white/5 rounded-xl p-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 pb-4 border-b border-white/5">
+                <div>
+                  <h3 className="font-bold text-white text-lg flex items-center gap-2">
+                    {user.userName || 'Unknown'} 
+                    {user.email === 'jaivalppp@gmail.com' && <span className="bg-red-500/20 text-red-500 text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider font-bold">Admin</span>}
+                  </h3>
+                  {user.email && <p className="text-sm text-gray-400 mt-0.5">{user.email}</p>}
+                  {user.uid && <p className="text-xs text-gray-600 font-mono mt-1 w-full truncate max-w-[200px]">UID: {user.uid}</p>}
+                </div>
+                <div className="mt-3 sm:mt-0">
+                  <span className="text-xs font-medium text-emerald-400 bg-emerald-400/10 px-3 py-1 rounded-full whitespace-nowrap">
+                    Active User
+                  </span>
+                </div>
+              </div>
+              <h4 className="text-sm font-semibold text-gray-400 mb-2 uppercase tracking-wide">Login History</h4>
+              <div className="space-y-2 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {Object.entries(user.opens || {}).sort(([dateA], [dateB]) => dateB.localeCompare(dateA)).map(([date, count]) => (
+                  <div key={date} className="flex justify-between items-center text-sm bg-white/5 px-3 py-2 rounded-lg">
+                    <span className="text-gray-300 font-medium">{date}</span>
+                    <span className="bg-purple-500/20 text-purple-400 px-2 py-0.5 rounded-md font-bold text-xs">{String(count)} opens</span>
                   </div>
                 ))}
               </div>
