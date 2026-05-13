@@ -55,6 +55,22 @@ export const incrementUserOpen = async (userName: string, dateStr: string) => {
   }
 };
 
+export const syncUserData = async (userName: string, data: any) => {
+  const ref = doc(db, 'userStats', userName);
+  try {
+    await setDoc(ref, data, { merge: true });
+  } catch (e) {
+    console.error('Error syncing user data:', e);
+  }
+};
+
+export const incrementUserAdViews = async (userName: string) => {
+  const ref = doc(db, 'userStats', userName);
+  try {
+    await setDoc(ref, { totalAdViews: increment(1) }, { merge: true });
+  } catch (e) {}
+};
+
 export const fetchAllUserStats = async () => {
   const snapshot = await getDocs(collection(db, 'userStats'));
   const stats: Record<string, any> = {};

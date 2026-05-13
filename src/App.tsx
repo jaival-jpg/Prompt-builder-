@@ -10,7 +10,8 @@ import { GoogleGenAI } from '@google/genai';
 import { 
   monitorAppUpdate, updateAppUpdate, clearAppUpdate, 
   incrementAdViews, monitorAdViews, 
-  incrementUserOpen, fetchAllUserStats, monitorUserStats 
+  incrementUserOpen, fetchAllUserStats, monitorUserStats,
+  syncUserData, incrementUserAdViews
 } from './firebase-utils';
 
 const translations: any = {
@@ -172,7 +173,10 @@ export default function App() {
 
   useEffect(() => {
     localStorage.setItem('credits', credits.toString());
-  }, [credits]);
+    if (userName) {
+      syncUserData(userName, { credits });
+    }
+  }, [credits, userName]);
 
   useEffect(() => {
     localStorage.setItem('currentTab', currentTab);
@@ -185,7 +189,10 @@ export default function App() {
 
   useEffect(() => {
     localStorage.setItem('prompt_history', JSON.stringify(history));
-  }, [history]);
+    if (userName) {
+      syncUserData(userName, { history });
+    }
+  }, [history, userName]);
 
   useEffect(() => {
     localStorage.setItem('theme', theme);
@@ -234,7 +241,7 @@ export default function App() {
         {currentTab === 'history' && <HistoryPage key="history" history={history} onEdit={handleEdit} onDelete={handleDelete} t={t} />}
         {currentTab === 'settings' && <SettingsPage key="settings" theme={theme} setTheme={setTheme} language={language} setLanguage={setLanguage} setCurrentTab={setCurrentTab} t={t} apiKey={globalApiKey} setApiKey={setGlobalApiKey} onResetApp={handleResetApp} />}
         {currentTab === 'about' && <AboutPage key="about" setCurrentTab={setCurrentTab} t={t} />}
-        {currentTab === 'ad_view' && <AdViewPage key="ad_view" setCurrentTab={setCurrentTab} setCredits={setCredits} adConfig={adConfig} />}
+        {currentTab === 'ad_view' && <AdViewPage key="ad_view" setCurrentTab={setCurrentTab} setCredits={setCredits} adConfig={adConfig} userName={userName} />}
         {currentTab === 'admin' && <AdminPage key="admin" setCurrentTab={setCurrentTab} />}
       </AnimatePresence>
       {currentTab !== 'ad_view' && currentTab !== 'admin' && <BottomNav currentTab={currentTab} setCurrentTab={setCurrentTab} t={t} onStartNew={handleStartNew} />}
@@ -455,14 +462,17 @@ const NavItem = ({ icon, label, isActive, onClick }: any) => (
   </button>
 );
 
-const AdViewPage = ({ setCurrentTab, setCredits, adConfig }: any) => {
+const AdViewPage = ({ setCurrentTab, setCredits, adConfig, userName }: any) => {
   const [page, setPage] = useState(adConfig?.startPage || 1);
   const [timeLeft, setTimeLeft] = useState(10);
 
   useEffect(() => {
     // Analytics tracking (Ad page views)
     incrementAdViews();
-  }, [page]);
+    if (userName) {
+      incrementUserAdViews(userName);
+    }
+  }, [page, userName]);
 
   useEffect(() => {
     if (timeLeft > 0) {
@@ -2041,21 +2051,51 @@ const AdminPage = ({ setCurrentTab }: any) => {
 
       {activeAdminTab === 'userData' && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
-          <h2 className="text-xl font-bold text-white mb-4">User Data</h2>
+          <h2 className="text-xl font-bold text-white mb-4">Detailed User Data</h2>
           {Object.keys(userData).length === 0 ? <p className="text-gray-500">No user data recorded yet.</p> : null}
-          {Object.keys(userData).map(username => (
-            <div key={username} className="bg-[#120F1C] border border-white/5 rounded-xl p-4">
-              <h3 className="font-bold text-white mb-2 text-lg">{username}</h3>
-              <div className="space-y-2">
-                {Object.entries(userData[username].opens || {}).map(([date, count]) => (
-                  <div key={date} className="flex justify-between items-center text-sm">
-                    <span className="text-gray-400">{date}</span>
-                    <span className="bg-purple-500/20 text-purple-400 px-3 py-1 rounded-full font-medium">{String(count)} opens</span>
+          {Object.keys(userData).map(username => {
+            const data = userData[username];
+            return (
+              <div key={username} className="bg-[#120F1C] border border-white/5 rounded-xl p-4">
+                <div className="flex justify-between items-center mb-3">
+                  <h3 className="font-bold text-white text-lg">{username}</h3>
+                  <div className="flex gap-2">
+                    {data.credits !== undefined && (
+                      <span className="bg-yellow-500/20 text-yellow-400 px-3 py-1 rounded-full text-xs font-bold">🪙 {data.credits} Credits</span>
+                    )}
+                    {data.totalAdViews !== undefined && (
+                      <span className="bg-green-500/20 text-green-400 px-3 py-1 rounded-full text-xs font-bold"><PlayCircle size={12} className="inline mr-1"/> {data.totalAdViews} Ad Views</span>
+                    )}
                   </div>
-                ))}
+                </div>
+                
+                <h4 className="text-gray-400 text-xs uppercase tracking-wider mb-2 font-bold">Activity</h4>
+                <div className="space-y-2 mb-4 bg-white/5 p-3 rounded-xl border border-white/5">
+                  {Object.keys(data.opens || {}).length === 0 ? <p className="text-gray-500 text-xs">No app opens recorded.</p> : null}
+                  {Object.entries(data.opens || {}).map(([date, count]) => (
+                    <div key={date} className="flex justify-between items-center text-sm">
+                      <span className="text-gray-400">{date}</span>
+                      <span className="bg-purple-500/20 text-purple-400 px-3 py-1 rounded-full font-medium">{String(count)} opens</span>
+                    </div>
+                  ))}
+                </div>
+
+                {data.history && data.history.length > 0 && (
+                  <>
+                    <h4 className="text-gray-400 text-xs uppercase tracking-wider mb-2 font-bold">Generated Prompts ({data.history.length})</h4>
+                    <div className="space-y-2 max-h-40 overflow-y-auto hide-scrollbar">
+                      {data.history.map((h: any) => (
+                        <div key={h.id} className="bg-white/5 p-3 rounded-lg border border-white/5">
+                          <p className="text-sm font-semibold text-white truncate">{h.topic}</p>
+                          <p className="text-xs text-gray-500 line-clamp-1 mt-1">{h.prompt}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </motion.div>
       )}
 
