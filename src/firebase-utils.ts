@@ -9,8 +9,6 @@ export const monitorAppUpdate = (callback: (data: any) => void) => {
     } else {
       callback(null);
     }
-  }, (error) => {
-    console.warn("Firestore listener error (admin/update):", error.message);
   });
 };
 
@@ -40,19 +38,14 @@ export const monitorAdViews = (callback: (views: number) => void) => {
     } else {
       callback(0);
     }
-  }, (error) => {
-    console.warn("Firestore listener error (admin/activity):", error.message);
   });
 };
 
 // Admin / User Stats
-export const incrementUserOpen = async (userName: string, email: string, uid: string, dateStr: string) => {
-  const ref = doc(db, 'userStats', uid);
+export const incrementUserOpen = async (userName: string, dateStr: string) => {
+  const ref = doc(db, 'userStats', userName);
   try {
     await setDoc(ref, {
-      userName,
-      email,
-      uid,
       opens: {
         [dateStr]: increment(1)
       }
@@ -78,7 +71,5 @@ export const monitorUserStats = (callback: (stats: Record<string, any>) => void)
       stats[doc.id] = doc.data();
     });
     callback(stats);
-  }, (error) => {
-    console.warn("Firestore listener error (userStats):", error.message);
   });
 };
