@@ -3,7 +3,8 @@ import {
   Home, FileText, Wand2, History, Settings as SettingsIcon, 
   Search, LayoutGrid, ChevronRight, ArrowRight, ArrowLeft, Shield, HelpCircle, 
   Moon, Sun, Globe, Sparkles, LogOut, Check, Copy, Trash2, Info, Languages,
-  MoreVertical, Share2, Pin, Undo, Redo, Edit2, X, AlertTriangle, Coins, PlayCircle
+  MoreVertical, Share2, Pin, Undo, Redo, Edit2, X, AlertTriangle, Coins, PlayCircle,
+  Lock, Key
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { GoogleGenAI } from '@google/genai';
@@ -11,7 +12,7 @@ import {
   monitorAppUpdate, updateAppUpdate, clearAppUpdate, 
   incrementAdViews, monitorAdViews, 
   incrementUserOpen, fetchAllUserStats, monitorUserStats,
-  syncUserData, incrementUserAdViews
+  syncUserData, incrementUserAdViews, getUserDoc, registerUser
 } from './firebase-utils';
 
 const translations: any = {
@@ -106,8 +107,14 @@ export default function App() {
   });
 
   const [userName, setUserName] = useState(() => localStorage.getItem('userName') || '');
+  const [userPassword, setUserPassword] = useState(() => localStorage.getItem('userPassword') || '');
   const [showNamePopup, setShowNamePopup] = useState(() => !localStorage.getItem('userName'));
-  const [tempUserName, setTempUserName] = useState('');
+  const [authMode, setAuthMode] = useState<'register' | 'login'>('register');
+  const [authName, setAuthName] = useState('');
+  const [authPassword, setAuthPassword] = useState('');
+  const [authError, setAuthError] = useState('');
+  const [authLoading, setAuthLoading] = useState(false);
+  const [showAuthPassword, setShowAuthPassword] = useState(false);
 
   const [globalApiKey, setGlobalApiKey] = useState(() => localStorage.getItem('user_gemini_api_key') || '');
   // Show API key popup only if we already have the name
@@ -155,13 +162,151 @@ export default function App() {
     }
   }, [userName]);
 
-  const handleSaveName = () => {
-    if (tempUserName.trim()) {
-      const newName = tempUserName.trim();
-      setUserName(newName);
-      localStorage.setItem('userName', newName);
-      setShowNamePopup(false);
-      // Wait for effect to show Api key popup
+  const handleRegister = async () => {
+    const trimmedName = authName.trim();
+    const trimmedPass = authPassword;
+    if (!trimmedName || !trimmedPass) {
+      setAuthError('Name and Password are required');
+      return;
+    }
+    setAuthLoading(true);
+    setAuthError('');
+    try {
+      const existingUser = await getUserDoc(trimmedName);
+      if (existingUser) {
+        setAuthError('Username already exists. Please login instead.');
+      } else {
+        await registerUser(trimmedName, trimmedPass);
+        
+        // Also save in local backup registry
+        const localUsers = JSON.parse(localStorage.getItem('localUsersRegistry') || '{}');
+        localUsers[trimmedName] = {
+          password: trimmedPass,
+          createdAt: Date.now(),
+          credits: 5,
+          history: [],
+          totalAdViews: 0
+        };
+        localStorage.setItem('localUsersRegistry', JSON.stringify(localUsers));
+
+        setUserName(trimmedName);
+        setUserPassword(trimmedPass);
+        localStorage.setItem('userName', trimmedName);
+        localStorage.setItem('userPassword', trimmedPass);
+        localStorage.setItem('credits', '5');
+        setCredits(5);
+        setHistory([]);
+        localStorage.setItem('prompt_history', '[]');
+        setShowNamePopup(false);
+        setAuthName('');
+        setAuthPassword('');
+      }
+    } catch (e: any) {
+      // Offline / network fallback
+      const localUsers = JSON.parse(localStorage.getItem('localUsersRegistry') || '{}');
+      if (localUsers[trimmedName]) {
+        setAuthError('Username already exists. Please login instead.');
+      } else {
+        localUsers[trimmedName] = {
+          password: trimmedPass,
+          createdAt: Date.now(),
+          credits: 5,
+          history: [],
+          totalAdViews: 0
+        };
+        localStorage.setItem('localUsersRegistry', JSON.stringify(localUsers));
+
+        setUserName(trimmedName);
+        setUserPassword(trimmedPass);
+        localStorage.setItem('userName', trimmedName);
+        localStorage.setItem('userPassword', trimmedPass);
+        localStorage.setItem('credits', '5');
+        setCredits(5);
+        setHistory([]);
+        localStorage.setItem('prompt_history', '[]');
+        setShowNamePopup(false);
+        setAuthName('');
+        setAuthPassword('');
+      }
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleLogin = async () => {
+    const trimmedName = authName.trim();
+    const trimmedPass = authPassword;
+    if (!trimmedName || !trimmedPass) {
+      setAuthError('Name and Password are required');
+      return;
+    }
+    setAuthLoading(true);
+    setAuthError('');
+    try {
+      const userDoc = await getUserDoc(trimmedName);
+      if (!userDoc) {
+        setAuthError('Account does not exist. Please register first.');
+      } else if (userDoc.password !== trimmedPass) {
+        setAuthError('Incorrect password. Please try again.');
+      } else {
+        setUserName(trimmedName);
+        setUserPassword(trimmedPass);
+        localStorage.setItem('userName', trimmedName);
+        localStorage.setItem('userPassword', trimmedPass);
+        
+        const loadedCredits = userDoc.credits !== undefined ? userDoc.credits : 5;
+        localStorage.setItem('credits', loadedCredits.toString());
+        setCredits(loadedCredits);
+
+        const loadedHistory = userDoc.history || [];
+        localStorage.setItem('prompt_history', JSON.stringify(loadedHistory));
+        setHistory(loadedHistory);
+
+        // Update local backup registry as well
+        const localUsers = JSON.parse(localStorage.getItem('localUsersRegistry') || '{}');
+        localUsers[trimmedName] = {
+          password: trimmedPass,
+          createdAt: userDoc.createdAt || Date.now(),
+          credits: loadedCredits,
+          history: loadedHistory,
+          totalAdViews: userDoc.totalAdViews || 0
+        };
+        localStorage.setItem('localUsersRegistry', JSON.stringify(localUsers));
+
+        setShowNamePopup(false);
+        setAuthName('');
+        setAuthPassword('');
+      }
+    } catch (e: any) {
+      // Offline / network fallback
+      const localUsers = JSON.parse(localStorage.getItem('localUsersRegistry') || '{}');
+      const localUser = localUsers[trimmedName];
+      if (localUser) {
+        if (localUser.password === trimmedPass) {
+          setUserName(trimmedName);
+          setUserPassword(trimmedPass);
+          localStorage.setItem('userName', trimmedName);
+          localStorage.setItem('userPassword', trimmedPass);
+          
+          const loadedCredits = localUser.credits !== undefined ? localUser.credits : 5;
+          localStorage.setItem('credits', loadedCredits.toString());
+          setCredits(loadedCredits);
+
+          const loadedHistory = localUser.history || [];
+          localStorage.setItem('prompt_history', JSON.stringify(loadedHistory));
+          setHistory(loadedHistory);
+
+          setShowNamePopup(false);
+          setAuthName('');
+          setAuthPassword('');
+        } else {
+          setAuthError('Incorrect password. Please try again.');
+        }
+      } else {
+        setAuthError('Account does not exist locally. Please register or check connection.');
+      }
+    } finally {
+      setAuthLoading(false);
     }
   };
 
@@ -224,8 +369,11 @@ export default function App() {
     setCurrentTab('builder');
   };
 
-  const handleResetApp = () => {
-    localStorage.clear();
+  const handleLogout = () => {
+    localStorage.removeItem('userName');
+    localStorage.removeItem('userPassword');
+    localStorage.removeItem('user_gemini_api_key');
+    localStorage.removeItem('prompt_history');
     localStorage.setItem('credits', '5');
     window.location.reload();
   };
@@ -239,7 +387,7 @@ export default function App() {
         {currentTab === 'notes' && <NotesPage key="notes" history={history} setHistory={setHistory} editingNote={editingNote} setEditingNote={setEditingNote} t={t} />}
         {currentTab === 'builder' && <BuilderPage key="builder" setCurrentTab={setCurrentTab} history={history} setHistory={setHistory} editData={editData} setEditData={setEditData} setEditingNote={setEditingNote} credits={credits} setCredits={setCredits} t={t} setAdConfig={setAdConfig} />}
         {currentTab === 'history' && <HistoryPage key="history" history={history} onEdit={handleEdit} onDelete={handleDelete} t={t} />}
-        {currentTab === 'settings' && <SettingsPage key="settings" theme={theme} setTheme={setTheme} language={language} setLanguage={setLanguage} setCurrentTab={setCurrentTab} t={t} apiKey={globalApiKey} setApiKey={setGlobalApiKey} onResetApp={handleResetApp} />}
+        {currentTab === 'settings' && <SettingsPage key="settings" theme={theme} setTheme={setTheme} language={language} setLanguage={setLanguage} setCurrentTab={setCurrentTab} t={t} apiKey={globalApiKey} setApiKey={setGlobalApiKey} onLogout={handleLogout} />}
         {currentTab === 'about' && <AboutPage key="about" setCurrentTab={setCurrentTab} t={t} />}
         {currentTab === 'ad_view' && <AdViewPage key="ad_view" setCurrentTab={setCurrentTab} setCredits={setCredits} adConfig={adConfig} userName={userName} />}
         {currentTab === 'admin' && <AdminPage key="admin" setCurrentTab={setCurrentTab} />}
@@ -323,29 +471,129 @@ export default function App() {
               className="bg-[#120F1C] border border-white/10 rounded-3xl p-6 w-full max-w-sm shadow-2xl relative"
             >
               <div className="flex flex-col items-center mb-6 mt-2">
-                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-500/20 to-blue-500/20 flex items-center justify-center mb-4">
-                  <Sparkles className="text-purple-400" size={32} />
+                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-purple-500/20 to-blue-500/20 flex items-center justify-center mb-3">
+                  <Sparkles className="text-purple-400" size={28} />
                 </div>
-                <h3 className="text-xl font-bold text-white text-center">Welcome! ✨</h3>
-                <p className="text-sm text-gray-400 text-center mt-2 leading-relaxed">
-                  Please enter your name to get started.
+                <h3 className="text-xl font-bold text-white text-center">
+                  {authMode === 'register' ? 'Create Account ✨' : 'Welcome Back! 👋'}
+                </h3>
+                <p className="text-xs text-gray-400 text-center mt-1 leading-relaxed">
+                  {authMode === 'register' 
+                    ? 'Register with your name and a password' 
+                    : 'Enter your name and password to log in'}
                 </p>
               </div>
-              
-              <input 
-                type="text"
-                value={tempUserName}
-                onChange={(e) => setTempUserName(e.target.value)}
-                className="w-full bg-[#05030A] border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 mb-4 font-medium"
-                placeholder="Your Name"
-              />
-              <button 
-                onClick={handleSaveName}
-                disabled={!tempUserName.trim()}
-                className="w-full py-3.5 rounded-xl font-medium text-white bg-gradient-to-r from-purple-600 to-blue-600 shadow-lg shadow-blue-900/20 active:scale-[0.98] transition-transform disabled:opacity-50"
-              >
-                Continue
-              </button>
+
+              {/* Login/Register Tab Toggle as requested ("previous button" or already-registered option) */}
+              <div className="flex bg-[#05030A] p-1 rounded-xl gap-1 border border-white/5 mb-5 select-none">
+                <button
+                  type="button"
+                  onClick={() => { setAuthMode('register'); setAuthError(''); }}
+                  className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
+                    authMode === 'register' 
+                      ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow' 
+                      : 'text-gray-400 hover:text-white'
+                  }`}
+                >
+                  Register
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setAuthMode('login'); setAuthError(''); }}
+                  className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
+                    authMode === 'login' 
+                      ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow' 
+                      : 'text-gray-400 hover:text-white'
+                  }`}
+                >
+                  Log In
+                </button>
+              </div>
+
+              {authError && (
+                <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-3 rounded-xl text-xs mb-4 text-center leading-relaxed font-semibold">
+                  ⚠️ {authError}
+                </div>
+              )}
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-gray-400 text-[10px] font-bold uppercase tracking-wider mb-1.5 ml-1">
+                    Your Name
+                  </label>
+                  <input 
+                    type="text"
+                    value={authName}
+                    onChange={(e) => setAuthName(e.target.value)}
+                    className="w-full bg-[#05030A] border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 font-medium text-sm"
+                    placeholder="Enter your name"
+                    disabled={authLoading}
+                  />
+                </div>
+
+                <div>
+                  <div className="flex justify-between items-center mb-1.5 px-1">
+                    <label className="block text-gray-400 text-[10px] font-bold uppercase tracking-wider">
+                      Password
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setShowAuthPassword(!showAuthPassword)}
+                      className="text-[10px] font-bold text-purple-400 hover:text-purple-300"
+                    >
+                      {showAuthPassword ? 'Hide' : 'Show'}
+                    </button>
+                  </div>
+                  <input 
+                    type={showAuthPassword ? 'text' : 'password'}
+                    value={authPassword}
+                    onChange={(e) => setAuthPassword(e.target.value)}
+                    className="w-full bg-[#05030A] border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 font-medium text-sm font-mono"
+                    placeholder="Enter password"
+                    disabled={authLoading}
+                  />
+                </div>
+
+                <div className="pt-2">
+                  {authMode === 'register' ? (
+                    <button 
+                      onClick={handleRegister}
+                      disabled={authLoading || !authName.trim() || !authPassword}
+                      className="w-full py-3.5 rounded-xl font-bold text-white bg-gradient-to-r from-purple-600 to-blue-600 shadow-lg shadow-blue-900/20 active:scale-[0.98] transition-transform disabled:opacity-50 flex items-center justify-center gap-2"
+                    >
+                      {authLoading ? 'Creating Account...' : 'Create Account'}
+                    </button>
+                  ) : (
+                    <button 
+                      onClick={handleLogin}
+                      disabled={authLoading || !authName.trim() || !authPassword}
+                      className="w-full py-3.5 rounded-xl font-bold text-white bg-gradient-to-r from-purple-600 to-blue-600 shadow-lg shadow-blue-900/20 active:scale-[0.98] transition-transform disabled:opacity-50 flex items-center justify-center gap-2"
+                    >
+                      {authLoading ? 'Logging In...' : 'Log In'}
+                    </button>
+                  )}
+                </div>
+
+                <div className="text-center pt-1">
+                  {authMode === 'register' ? (
+                    <button
+                      type="button"
+                      onClick={() => { setAuthMode('login'); setAuthError(''); }}
+                      className="text-xs text-gray-400 hover:text-white transition-colors"
+                    >
+                      Already have an account? <span className="text-purple-400 font-bold">Log in here →</span>
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => { setAuthMode('register'); setAuthError(''); }}
+                      className="text-xs text-gray-400 hover:text-white transition-colors"
+                    >
+                      Need a new account? <span className="text-purple-400 font-bold">Register here →</span>
+                    </button>
+                  )}
+                </div>
+              </div>
             </motion.div>
           </motion.div>
         )}
@@ -465,6 +713,10 @@ const NavItem = ({ icon, label, isActive, onClick }: any) => (
 const AdViewPage = ({ setCurrentTab, setCredits, adConfig, userName }: any) => {
   const [page, setPage] = useState(adConfig?.startPage || 1);
   const [timeLeft, setTimeLeft] = useState(10);
+  const [clickedPage1, setClickedPage1] = useState(false);
+  const [clickedPage2, setClickedPage2] = useState(false);
+  const [isHoveringAd1, setIsHoveringAd1] = useState(false);
+  const [isHoveringAd2, setIsHoveringAd2] = useState(false);
 
   useEffect(() => {
     // Analytics tracking (Ad page views)
@@ -481,6 +733,35 @@ const AdViewPage = ({ setCurrentTab, setCredits, adConfig, userName }: any) => {
     }
   }, [timeLeft]);
 
+  useEffect(() => {
+    const handleBlur = () => {
+      // If user is hovering any of the ad wrappers when focus is lost,
+      // or if document activeElement is indeed an iframe, mark ad as clicked.
+      if (isHoveringAd1 || isHoveringAd2 || (document.activeElement && document.activeElement.tagName === 'IFRAME')) {
+        if (page === 1) {
+          setClickedPage1(true);
+        } else {
+          setClickedPage2(true);
+        }
+      }
+    };
+
+    window.addEventListener('blur', handleBlur);
+    // Also track focus event to detect when the user comes back
+    const handleFocus = () => {
+      if (document.activeElement && document.activeElement.tagName === 'IFRAME') {
+        // Reset focus back to body so subsequent clicks can be registered
+        (document.activeElement as HTMLElement).blur();
+      }
+    };
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      window.removeEventListener('blur', handleBlur);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [page, isHoveringAd1, isHoveringAd2]);
+
   const handleNext = () => {
     if (page === 1 && !adConfig) {
       setPage(2);
@@ -495,34 +776,96 @@ const AdViewPage = ({ setCurrentTab, setCredits, adConfig, userName }: any) => {
     }
   };
 
+  const showActionButton = page === 1 ? clickedPage1 : clickedPage2;
+
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-[#05030A] z-[100] flex flex-col items-center overflow-hidden">
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-[#05030A] z-[100] flex flex-col items-center overflow-y-auto py-4">
       {/* Top Header with counter / action */}
-      <div className="w-full flex justify-end p-4 z-10">
-        <div className="w-8 h-8 rounded-full border border-white/20 flex items-center justify-center bg-[#1A1A1A] shadow-md">
-          {timeLeft > 0 ? (
-            <span className="text-white font-bold text-sm">{timeLeft}</span>
+      <div className="w-full flex justify-between items-center px-4 mb-3 z-10 max-w-md mx-auto">
+        <div>
+          {showActionButton ? (
+            <span className="text-green-500 font-bold text-xs bg-green-500/10 border border-green-500/20 px-3 py-1 rounded-full flex items-center gap-1 select-none">
+              ✅ Ad Clicked! Proceed now
+            </span>
           ) : (
-            <button onClick={handleNext} className="w-full h-full flex items-center justify-center rounded-full text-white hover:bg-white/10 transition-colors">
-              {page === 1 ? <ArrowRight size={16} /> : <X size={16} />}
-            </button>
+            <span className="text-red-500 font-bold text-xs bg-red-500/10 border border-red-500/20 px-3 py-1 rounded-full flex items-center gap-1 animate-pulse select-none">
+              ⚠️ Please click on the advertisement
+            </span>
           )}
         </div>
+        
+        {showActionButton && (
+          <div className="w-10 h-10 rounded-full border border-white/20 flex items-center justify-center bg-[#1A1A1A] shadow-md">
+            <button onClick={handleNext} className="w-full h-full flex items-center justify-center rounded-full text-white hover:bg-white/10 transition-colors">
+              {page === 1 ? <ArrowRight size={18} /> : <X size={18} />}
+            </button>
+          </div>
+        )}
       </div>
       
       {/* Advertising Content Area */}
-      <div className="flex-1 w-full flex flex-col items-center gap-4 pt-0 pb-4 px-4 h-full overflow-hidden">
-        <p className="text-gray-500 text-xs font-medium tracking-widest uppercase mb-2">Advertisement</p>
+      <div className="flex-1 w-full max-w-md flex flex-col items-center gap-4 px-4 pb-12">
+        <div className="text-center w-full mb-1">
+          <p className="text-[#FF3B30] text-xl sm:text-2xl font-extrabold uppercase tracking-widest animate-pulse select-none">
+            Click on ads
+          </p>
+          <p className="text-gray-400 text-xs mt-1 select-none">
+            {page === 1 ? "Click first ad to view the next page" : "Click second ad to finish and earn credits"}
+          </p>
+        </div>
+
         {page === 1 ? (
-          <>
-            <AdsterraSquareBanner />
-            <AdsterraSquareBanner />
-          </>
+          <div className="space-y-4 w-full flex flex-col items-center relative">
+            <div 
+              onMouseEnter={() => setIsHoveringAd1(true)}
+              onMouseLeave={() => setIsHoveringAd1(false)}
+              className="relative w-[300px] h-[250px] transition-transform active:scale-[0.98] rounded-2xl overflow-hidden border border-white/10 bg-[#120F1C] shadow-lg"
+            >
+              <AdsterraSquareBanner />
+              {/* Floating hint over the advertisement without blocking standard mouse pointer actions */}
+              <div className="absolute top-2 left-2 bg-red-600/90 text-white font-bold text-[10px] px-2 py-1 rounded shadow pointer-events-none select-none z-20">
+                🎯 CLICK HERE
+              </div>
+            </div>
+
+            <div 
+              onMouseEnter={() => setIsHoveringAd2(true)}
+              onMouseLeave={() => setIsHoveringAd2(false)}
+              className="relative w-[300px] h-[250px] transition-transform active:scale-[0.98] rounded-2xl overflow-hidden border border-white/10 bg-[#120F1C] shadow-lg"
+            >
+              <AdsterraSquareBanner />
+              {/* Floating hint over the advertisement without blocking standard mouse pointer actions */}
+              <div className="absolute top-2 left-2 bg-red-600/90 text-white font-bold text-[10px] px-2 py-1 rounded shadow pointer-events-none select-none z-20">
+                🎯 CLICK HERE
+              </div>
+            </div>
+          </div>
         ) : (
-          <>
-            <AdsterraNativeBanner />
-            <AdsterraNativeBanner />
-          </>
+          <div className="space-y-4 w-full flex flex-col items-center relative">
+            <div 
+              onMouseEnter={() => setIsHoveringAd1(true)}
+              onMouseLeave={() => setIsHoveringAd1(false)}
+              className="relative w-full max-w-[600px] min-h-[300px] transition-transform active:scale-[0.98] rounded-2xl overflow-hidden border border-white/10 bg-[#120F1C] shadow-lg"
+            >
+              <AdsterraNativeBanner />
+              {/* Floating hint over the advertisement without blocking standard mouse pointer actions */}
+              <div className="absolute top-2 left-2 bg-red-600/90 text-white font-bold text-[10px] px-2 py-1 rounded shadow pointer-events-none select-none z-20">
+                🎯 CLICK HERE
+              </div>
+            </div>
+
+            <div 
+              onMouseEnter={() => setIsHoveringAd2(true)}
+              onMouseLeave={() => setIsHoveringAd2(false)}
+              className="relative w-full max-w-[600px] min-h-[300px] transition-transform active:scale-[0.98] rounded-2xl overflow-hidden border border-white/10 bg-[#120F1C] shadow-lg"
+            >
+              <AdsterraNativeBanner />
+              {/* Floating hint over the advertisement without blocking standard mouse pointer actions */}
+              <div className="absolute top-2 left-2 bg-red-600/90 text-white font-bold text-[10px] px-2 py-1 rounded shadow pointer-events-none select-none z-20">
+                🎯 CLICK HERE
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </motion.div>
@@ -551,10 +894,10 @@ const HomePage = ({ setCurrentTab, history, setEditData, credits, setCredits, t,
   };
 
   return (
-    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="p-6 pb-32 relative">
-      <header className="mb-8 mt-4 flex items-center justify-between">
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="p-4 sm:p-6 pb-32 max-w-lg mx-auto w-full relative">
+      <header className="mb-6 mt-4 flex items-center justify-between">
         <div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-[#A78BFA] to-[#60A5FA] bg-clip-text text-transparent mb-2 tracking-tight">Prompt Builder</h1>
+          <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-[#A78BFA] to-[#60A5FA] bg-clip-text text-transparent mb-1 tracking-tight">Prompt Builder</h1>
           <p className="text-gray-400 text-sm">Craft the perfect AI prompt.</p>
         </div>
         <div 
@@ -627,19 +970,19 @@ const HomePage = ({ setCurrentTab, history, setEditData, credits, setCredits, t,
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 mb-8">
-        <div onClick={() => setCurrentTab('notes')} className="bg-[#120F1C] rounded-[24px] p-5 border border-white/10 cursor-pointer hover:bg-[#1A1625] transition-all transform hover:-translate-y-1 shadow-[inset_0_1px_2px_rgba(255,255,255,0.15),inset_0_-1px_2px_rgba(0,0,0,0.4),0_8px_20px_rgba(0,0,0,0.5)] hover:shadow-[inset_0_1px_3px_rgba(255,255,255,0.25),inset_0_-1px_2px_rgba(0,0,0,0.5),0_12px_25px_rgba(0,0,0,0.7)]">
+      <div className="grid grid-cols-1 min-[360px]:grid-cols-2 gap-3 min-[360px]:gap-4 mb-8">
+        <div onClick={() => setCurrentTab('notes')} className="bg-[#120F1C] rounded-[24px] p-4 sm:p-5 border border-white/10 cursor-pointer hover:bg-[#1A1625] transition-all transform hover:-translate-y-1 shadow-[inset_0_1px_2px_rgba(255,255,255,0.15),inset_0_-1px_2px_rgba(0,0,0,0.4),0_8px_20px_rgba(0,0,0,0.5)] hover:shadow-[inset_0_1px_3px_rgba(255,255,255,0.25),inset_0_-1px_2px_rgba(0,0,0,0.5),0_12px_25px_rgba(0,0,0,0.7)]">
           <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center mb-4 text-blue-400">
             <FileText size={20} />
           </div>
-          <h3 className="text-white font-semibold mb-1">Prompt Notes</h3>
+          <h3 className="text-white font-semibold mb-1 text-sm sm:text-base">Prompt Notes</h3>
           <p className="text-gray-500 text-xs">Your saved prompts</p>
         </div>
-        <div onClick={() => setCurrentTab('history')} className="bg-[#120F1C] rounded-[24px] p-5 border border-white/10 cursor-pointer hover:bg-[#1A1625] transition-all transform hover:-translate-y-1 shadow-[inset_0_1px_2px_rgba(255,255,255,0.15),inset_0_-1px_2px_rgba(0,0,0,0.4),0_8px_20px_rgba(0,0,0,0.5)] hover:shadow-[inset_0_1px_3px_rgba(255,255,255,0.25),inset_0_-1px_2px_rgba(0,0,0,0.5),0_12px_25px_rgba(0,0,0,0.7)]">
+        <div onClick={() => setCurrentTab('history')} className="bg-[#120F1C] rounded-[24px] p-4 sm:p-5 border border-white/10 cursor-pointer hover:bg-[#1A1625] transition-all transform hover:-translate-y-1 shadow-[inset_0_1px_2px_rgba(255,255,255,0.15),inset_0_-1px_2px_rgba(0,0,0,0.4),0_8px_20px_rgba(0,0,0,0.5)] hover:shadow-[inset_0_1px_3px_rgba(255,255,255,0.25),inset_0_-1px_2px_rgba(0,0,0,0.5),0_12px_25px_rgba(0,0,0,0.7)]">
           <div className="w-10 h-10 rounded-full bg-yellow-500/10 flex items-center justify-center mb-4 text-yellow-500">
             <History size={20} />
           </div>
-          <h3 className="text-white font-semibold mb-1">History</h3>
+          <h3 className="text-white font-semibold mb-1 text-sm sm:text-base">History</h3>
           <p className="text-gray-500 text-xs">Your past creations</p>
         </div>
       </div>
@@ -903,9 +1246,9 @@ const NotesPage = ({ history, setHistory, editingNote, setEditingNote, t }: any)
   }
 
   return (
-    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="p-6 pb-32 min-h-screen bg-[#05030A]">
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="p-4 sm:p-6 pb-32 max-w-lg mx-auto w-full min-h-screen bg-[#05030A]">
       <header className="flex items-center justify-between mb-8 mt-2">
-        <h1 className="text-[28px] font-bold text-white tracking-wide">Prompt Notes</h1>
+        <h1 className="text-2xl sm:text-[28px] font-bold text-white tracking-wide">Prompt Notes</h1>
         <div className="w-10 h-10 rounded-full flex items-center justify-center shadow-[0_0_10px_rgba(139,92,246,0.3)] overflow-hidden">
           <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhiP8PtPcn_lYed8oigp1S0lt3qnSwtz0ifjHgxc3iKF01mdzKLRtm5Bq8gjxQd4-j69avgRw_AmPYyonScYLVsoXQ0tYn-AyRfnRGPEaoVcCucFH6M6j_gLA7pbPkbEfP2mv6qEkoI4I07ZDs-b_dnX85SgV4qM2lIekCWSJeilBojFT1x7vpVD5VTR5D2/s1120/45435.png" alt="Robot" className="w-full h-full object-cover rounded-full" />
         </div>
@@ -933,7 +1276,7 @@ const NotesPage = ({ history, setHistory, editingNote, setEditingNote, t }: any)
           <p>No notes found.</p>
         </div>
       ) : (
-        <div className="columns-2 gap-4 space-y-4">
+        <div className="columns-1 min-[400px]:columns-2 gap-3 min-[400px]:gap-4 space-y-3 min-[400px]:space-y-4">
           {filteredHistory.map((item: any, index: number) => {
             const dotColor = DOT_COLORS[index % DOT_COLORS.length];
             return (
@@ -1257,7 +1600,7 @@ Return ONLY the generated prompt text in Markdown format. Do not include any con
   };
 
   return (
-    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="p-6 pb-32 min-h-screen flex flex-col">
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="p-4 sm:p-6 pb-32 max-w-lg mx-auto w-full min-h-screen flex flex-col">
       <header className="flex items-center mb-8 mt-4">
         <div className="w-10 h-10 rounded-full flex items-center justify-center mr-4 shadow-[0_0_10px_rgba(139,92,246,0.3)] overflow-hidden">
           <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhiP8PtPcn_lYed8oigp1S0lt3qnSwtz0ifjHgxc3iKF01mdzKLRtm5Bq8gjxQd4-j69avgRw_AmPYyonScYLVsoXQ0tYn-AyRfnRGPEaoVcCucFH6M6j_gLA7pbPkbEfP2mv6qEkoI4I07ZDs-b_dnX85SgV4qM2lIekCWSJeilBojFT1x7vpVD5VTR5D2/s1120/45435.png" alt="Robot" className="w-full h-full object-cover rounded-full" />
@@ -1615,7 +1958,7 @@ Return ONLY the generated prompt text in Markdown format. Do not include any con
 };
 
 const HistoryPage = ({ history, onEdit, onDelete, t }: any) => (
-  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="p-6 pb-32">
+  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="p-4 sm:p-6 pb-32 max-w-lg mx-auto w-full">
     <header className="flex items-center mb-6 mt-4">
       <div className="w-10 h-10 rounded-full bg-yellow-500/10 flex items-center justify-center mr-4 text-yellow-500">
         <History size={20} />
@@ -1671,14 +2014,36 @@ const HistoryPage = ({ history, onEdit, onDelete, t }: any) => (
   </motion.div>
 );
 
-const SettingsPage = ({ theme, setTheme, language, setLanguage, setCurrentTab, t, apiKey, setApiKey, onResetApp }: any) => {
+const SettingsPage = ({ theme, setTheme, language, setLanguage, setCurrentTab, t, apiKey, setApiKey, onLogout }: any) => {
   const [name, setName] = useState(() => localStorage.getItem('userName') || '');
   const [isEditingName, setIsEditingName] = useState(false);
   const [tempName, setTempName] = useState(name);
   
+  const [password, setPassword] = useState(() => localStorage.getItem('userPassword') || '');
+  const [isEditingPassword, setIsEditingPassword] = useState(false);
+  const [tempPassword, setTempPassword] = useState(password);
+  const [showEditPasswordPlain, setShowEditPasswordPlain] = useState(false);
+
   const [isEditingApiKey, setIsEditingApiKey] = useState(false);
-  const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [logoutChecked, setLogoutChecked] = useState(false);
   const [tempApiKey, setTempApiKey] = useState(apiKey || '');
+
+  const handleSavePassword = async () => {
+    const trimmedPass = tempPassword;
+    if (!trimmedPass) return;
+    try {
+      const currentUserName = localStorage.getItem('userName');
+      if (currentUserName) {
+        await syncUserData(currentUserName, { password: trimmedPass });
+      }
+      localStorage.setItem('userPassword', trimmedPass);
+      setPassword(trimmedPass);
+      setIsEditingPassword(false);
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   const toggleTheme = () => setTheme(theme === 'dark' ? 'light' : 'dark');
   
@@ -1705,7 +2070,7 @@ const SettingsPage = ({ theme, setTheme, language, setLanguage, setCurrentTab, t
   const initials = name.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase();
 
   return (
-    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="p-6 pb-32">
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="p-4 sm:p-6 pb-32 max-w-lg mx-auto w-full">
       <header className="flex items-center mb-8 mt-4">
         <div className="w-10 h-10 rounded-full bg-gray-500/10 flex items-center justify-center mr-4 text-gray-400">
           <SettingsIcon size={20} />
@@ -1749,6 +2114,13 @@ const SettingsPage = ({ theme, setTheme, language, setLanguage, setCurrentTab, t
         <div className="bg-[#120F1C] border border-white/5 rounded-3xl overflow-hidden">
           <SettingItem icon={<Shield size={18} />} label="Privacy & Security" />
           <div className="h-[1px] bg-white/5 mx-5" />
+          <SettingItem 
+            icon={<Lock size={18} />} 
+            label="Account Password" 
+            value={password || 'Not Set'} 
+            onClick={() => { setTempPassword(password); setIsEditingPassword(true); }} 
+          />
+          <div className="h-[1px] bg-white/5 mx-5" />
           <SettingItem icon={<Info size={18} />} label={t.about} onClick={() => setCurrentTab('about')} />
         </div>
       </div>
@@ -1756,45 +2128,58 @@ const SettingsPage = ({ theme, setTheme, language, setLanguage, setCurrentTab, t
       <AdsterraBanner />
 
       <button 
-        onClick={() => setShowResetConfirm(true)}
-        className="w-full py-4 rounded-2xl bg-red-500/5 text-red-500 font-medium border border-red-500/10 flex items-center justify-center hover:bg-red-500/10 transition-colors mb-6"
+        onClick={() => { setLogoutChecked(false); setShowLogoutConfirm(true); }}
+        className="w-full py-4 rounded-2xl bg-red-500/5 text-red-500 font-bold border border-red-500/10 flex items-center justify-center hover:bg-red-500/10 transition-colors mb-6 cursor-pointer"
       >
-        <AlertTriangle size={18} className="mr-2" /> Reset App
+        <LogOut size={18} className="mr-2" /> Log Out
       </button>
 
       <AnimatePresence>
-        {showResetConfirm && (
+        {showLogoutConfirm && (
           <motion.div 
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-sm p-6"
           >
             <motion.div 
               initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-[#120F1C] border border-red-500/20 rounded-3xl p-6 w-full max-w-sm shadow-2xl"
+              className="bg-[#120F1C] border border-white/10 rounded-[32px] p-6 w-full max-w-sm shadow-2xl relative"
             >
-              <div className="flex flex-col items-center text-center mb-6">
-                <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center mb-4 text-red-500">
-                  <AlertTriangle size={32} />
+              <div className="flex flex-col items-center text-center mb-5">
+                <div className="w-14 h-14 rounded-full bg-red-500/10 flex items-center justify-center mb-4 text-red-500">
+                  <LogOut size={26} />
                 </div>
-                <h3 className="text-xl font-bold text-white mb-2">Reset Application?</h3>
-                <p className="text-gray-400 text-sm">This will clear all your history, settings, and generated prompts. It cannot be undone.</p>
-                <p className="text-yellow-400 text-sm mt-3 font-medium bg-yellow-400/10 px-3 py-1.5 rounded-full border border-yellow-400/20">
-                  Bonus: You will receive 5 credits!
+                <h3 className="text-xl font-bold text-white mb-2">Log Out of Account?</h3>
+                <p className="text-gray-400 text-xs leading-relaxed">
+                  You will be logged out of your account. You must enter your correct password next time to access your prompts and preferences.
                 </p>
               </div>
+
+              {/* Tick box required for logout */}
+              <label className="flex items-start gap-4 bg-[#05030A] border border-white/5 rounded-2xl p-4 cursor-pointer hover:bg-white/5 transition-all w-full mb-6 text-left select-none">
+                <input 
+                  type="checkbox" 
+                  checked={logoutChecked} 
+                  onChange={(e) => setLogoutChecked(e.target.checked)} 
+                  className="mt-0.5 w-4 h-4 rounded border-white/20 bg-transparent text-purple-600 focus:ring-purple-500/50 accent-purple-600 cursor-pointer animate-none"
+                />
+                <span className="text-[11px] text-gray-300 font-semibold leading-normal">
+                  I understand, and want to log out of my profile.
+                </span>
+              </label>
               
               <div className="flex gap-3">
                 <button 
-                  onClick={() => setShowResetConfirm(false)}
-                  className="flex-1 py-3 rounded-2xl bg-[#1A1A1A] hover:bg-white/10 text-white font-medium transition-colors border border-white/5"
+                  onClick={() => { setShowLogoutConfirm(false); setLogoutChecked(false); }}
+                  className="flex-1 py-3.5 rounded-xl bg-[#1A1A1A] hover:bg-white/5 text-white font-semibold transition-colors border border-white/5 text-sm"
                 >
                   Cancel
                 </button>
                 <button 
-                  onClick={onResetApp}
-                  className="flex-1 py-3 rounded-2xl bg-red-500 hover:bg-red-600 text-white font-bold transition-colors shadow-lg shadow-red-500/20"
+                  onClick={onLogout}
+                  disabled={!logoutChecked}
+                  className="flex-1 py-3.5 rounded-xl bg-red-500 hover:bg-red-600 text-white font-bold transition-colors shadow-lg shadow-red-500/20 disabled:opacity-40 disabled:pointer-events-none text-sm flex items-center justify-center"
                 >
-                  Reset App
+                  Log Out
                 </button>
               </div>
             </motion.div>
@@ -1827,6 +2212,51 @@ const SettingsPage = ({ theme, setTheme, language, setLanguage, setCurrentTab, t
                 className="w-full py-3 rounded-xl font-medium text-white bg-gradient-to-r from-[#5B21B6] to-[#3B82F6] shadow-lg shadow-blue-900/20"
               >
                 Save Changes
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+        
+        {isEditingPassword && (
+          <motion.div 
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-6"
+          >
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-[#120F1C] border border-white/10 rounded-3xl p-6 w-full max-w-sm shadow-2xl animate-fade-in"
+            >
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-bold text-white">Edit Password</h3>
+                <button onClick={() => setIsEditingPassword(false)} className="text-gray-400 hover:text-white">
+                  <X size={20} />
+                </button>
+              </div>
+              <p className="text-xs text-gray-400 mb-4">Your updated password will be stored securely in your database doc.</p>
+              
+              <div className="relative mb-5">
+                <input 
+                  type={showEditPasswordPlain ? 'text' : 'password'}
+                  value={tempPassword}
+                  onChange={(e) => setTempPassword(e.target.value)}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 pr-12 font-medium"
+                  placeholder="Enter new password"
+                />
+                <button 
+                  type="button"
+                  onClick={() => setShowEditPasswordPlain(!showEditPasswordPlain)}
+                  className="absolute right-3 top-3.5 text-xs font-bold text-purple-400 hover:text-purple-300"
+                >
+                  {showEditPasswordPlain ? 'Hide' : 'Show'}
+                </button>
+              </div>
+
+              <button 
+                onClick={handleSavePassword}
+                disabled={!tempPassword}
+                className="w-full py-3 rounded-xl font-medium text-white bg-gradient-to-r from-[#5B21B6] to-[#3B82F6] shadow-lg shadow-blue-900/20 disabled:opacity-50"
+              >
+                Save Password
               </button>
             </motion.div>
           </motion.div>
@@ -1885,7 +2315,7 @@ const AboutPage = ({ setCurrentTab, t }: any) => {
   };
 
   return (
-    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="p-6 pb-32">
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="p-4 sm:p-6 pb-32 max-w-lg mx-auto w-full">
       <header className="flex items-center mb-8 mt-4">
         <button onClick={() => setCurrentTab('settings')} className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center mr-4 text-white hover:bg-white/10 transition-colors">
           <ArrowLeft size={20} />
@@ -1975,26 +2405,37 @@ const AdminPage = ({ setCurrentTab }: any) => {
   const [userData, setUserData] = useState<any>({});
   const [adViews, setAdViews] = useState(0);
 
-  useEffect(() => {
-    let unsubUser = () => {};
-    let unsubAd = () => {};
+  const getUserTime = (username: string) => {
+    const user = userData[username];
+    if (!user) return 0;
+    if (user.createdAt) return user.createdAt;
+    // fallback to most recent date in opens
+    const dates = Object.keys(user.opens || {});
+    if (dates.length > 0) {
+      dates.sort();
+      const latestDate = dates[dates.length - 1];
+      return new Date(latestDate).getTime();
+    }
+    return 0;
+  };
 
-    if (activeAdminTab === 'userData' || activeAdminTab === 'home') {
-      unsubUser = monitorUserStats((stats) => {
-        setUserData(stats);
-      });
-    }
-    if (activeAdminTab === 'userActivity' || activeAdminTab === 'home') {
-      unsubAd = monitorAdViews((views) => {
-        setAdViews(views);
-      });
-    }
+  const sortedUsernames = Object.keys(userData).sort((a, b) => {
+    return getUserTime(b) - getUserTime(a);
+  });
+
+  useEffect(() => {
+    const unsubUser = monitorUserStats((stats) => {
+      setUserData(stats);
+    });
+    const unsubAd = monitorAdViews((views) => {
+      setAdViews(views);
+    });
 
     return () => {
       unsubUser();
       unsubAd();
     };
-  }, [activeAdminTab]);
+  }, []);
 
   const handleUpdatePublish = async () => {
     if (!updateForm.title || !updateForm.link) return alert('Title and Link are required');
@@ -2022,7 +2463,7 @@ const AdminPage = ({ setCurrentTab }: any) => {
   };
 
   return (
-    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="min-h-screen bg-[#05030A] text-white p-6 pb-32">
+    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="min-h-screen bg-[#05030A] text-white p-4 sm:p-6 pb-32 max-w-lg mx-auto w-full">
       <header className="flex items-center mb-8 mt-4">
         <button onClick={() => activeAdminTab === 'home' ? setCurrentTab('home') : setActiveAdminTab('home')} className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center mr-4 text-white hover:bg-white/10 transition-colors">
           <ArrowLeft size={20} />
@@ -2051,9 +2492,22 @@ const AdminPage = ({ setCurrentTab }: any) => {
 
       {activeAdminTab === 'userData' && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
-          <h2 className="text-xl font-bold text-white mb-4">Detailed User Data</h2>
-          {Object.keys(userData).length === 0 ? <p className="text-gray-500">No user data recorded yet.</p> : null}
-          {Object.keys(userData).map(username => {
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-bold text-white">Detailed User Data</h2>
+            <div className="flex flex-col items-end text-[10px] text-gray-400 bg-white/5 border border-white/10 px-2.5 py-1.5 rounded-xl font-bold gap-1 select-none leading-none">
+              <span>👥 Total Users: <strong className="text-blue-400 text-xs font-black">{Object.keys(userData).length}</strong></span>
+              <span className="mt-1">🟢 Active Users: <strong className="text-green-500 text-xs font-black">{
+                Object.values(userData).filter((u: any) => {
+                  if (!u.opens) return false;
+                  const todayStr = new Date().toISOString().split('T')[0];
+                  const yesterdayStr = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+                  return Object.keys(u.opens).includes(todayStr) || Object.keys(u.opens).includes(yesterdayStr);
+                }).length
+              }</strong></span>
+            </div>
+          </div>
+          {sortedUsernames.length === 0 ? <p className="text-gray-500">No user data recorded yet.</p> : null}
+          {sortedUsernames.map(username => {
             const data = userData[username];
             return (
               <div key={username} className="bg-[#120F1C] border border-white/5 rounded-xl p-4">
@@ -2110,6 +2564,102 @@ const AdminPage = ({ setCurrentTab }: any) => {
               <p className="text-gray-400 text-sm mb-1">Total Ad Impressions</p>
               <p className="text-4xl font-bold text-white">{adViews}</p>
             </div>
+          </div>
+
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">All Users Details</h3>
+            {sortedUsernames.length === 0 ? (
+              <p className="text-gray-500 text-sm">No user activity recorded yet.</p>
+            ) : (
+              sortedUsernames.map((username) => {
+                const data = userData[username];
+                
+                const todayStr = new Date().toISOString().split('T')[0];
+                const yesterdayStr = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+                const isRecentActive = Object.keys(data.opens || {}).some(
+                  date => date === todayStr || date === yesterdayStr
+                );
+
+                return (
+                  <div key={username} className="bg-[#120F1C] border border-white/5 rounded-2xl p-4 space-y-4 shadow-lg">
+                    {/* User Name & Active Status */}
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h4 className="font-bold text-white text-base">{username}</h4>
+                        <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                          <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider flex items-center gap-1 ${
+                            isRecentActive 
+                              ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' 
+                              : 'bg-white/5 text-gray-400 border border-white/10'
+                          }`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${isRecentActive ? 'bg-emerald-400' : 'bg-gray-400'}`} />
+                            {isRecentActive ? 'Active' : 'Inactive'}
+                          </span>
+                          <span className="bg-green-500/10 text-green-400 border border-green-500/20 px-2 py-0.5 rounded-full text-[9px] font-bold flex items-center gap-1">
+                            <PlayCircle size={10} /> {data.totalAdViews || 0} Ads Watched
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Open History (when user data app open all data) */}
+                    <div>
+                      <h5 className="text-gray-400 text-[10px] font-bold uppercase tracking-wider mb-2">
+                        📅 Open History
+                      </h5>
+                      <div className="bg-white/5 border border-white/5 p-2.5 rounded-xl max-h-32 overflow-y-auto space-y-1 hide-scrollbar">
+                        {Object.keys(data.opens || {}).length === 0 ? (
+                          <p className="text-gray-500 text-xs italic">No app open history</p>
+                        ) : (
+                          Object.entries(data.opens || {})
+                            .sort((a, b) => b[0].localeCompare(a[0]))
+                            .map(([date, count]) => (
+                              <div key={date} className="flex justify-between items-center text-xs">
+                                <span className="text-gray-400 font-mono">{date}</span>
+                                <span className="text-purple-400 font-semibold bg-purple-500/10 px-2 py-0.5 rounded-full text-[10px]">
+                                  {count} opens
+                                </span>
+                              </div>
+                            ))
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Build History (whose built they) */}
+                    <div>
+                      <h5 className="text-gray-400 text-[10px] font-bold uppercase tracking-wider mb-2">
+                        ⚡ Build History ({data.history?.length || 0})
+                      </h5>
+                      {data.history && data.history.length > 0 ? (
+                        <div className="space-y-2 max-h-40 overflow-y-auto hide-scrollbar">
+                          {data.history.map((h: any, idx: number) => (
+                            <div key={h.id || idx} className="bg-white/5 border border-white/5 p-2.5 rounded-xl space-y-1">
+                              <div className="flex justify-between items-start gap-2">
+                                <span className="text-xs font-semibold text-white truncate max-w-[200px]">
+                                  {h.topic || 'Untitled'}
+                                </span>
+                                {h.category && (
+                                  <span className="text-[8px] bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded font-mono uppercase font-bold">
+                                    {h.category}
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-[10px] text-gray-400 line-clamp-2 leading-relaxed">
+                                {h.prompt}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-gray-500 text-xs italic bg-white/5 border border-white/5 p-2.5 rounded-xl">
+                          No built prompts history
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </div>
         </motion.div>
       )}

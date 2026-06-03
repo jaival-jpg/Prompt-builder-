@@ -89,3 +89,26 @@ export const monitorUserStats = (callback: (stats: Record<string, any>) => void)
     callback(stats);
   });
 };
+
+export const getUserDoc = async (userName: string) => {
+  const ref = doc(db, 'userStats', userName);
+  const docSnap = await getDoc(ref);
+  if (docSnap.exists()) {
+    return docSnap.data();
+  }
+  return null;
+};
+
+export const registerUser = async (userName: string, password: string) => {
+  const ref = doc(db, 'userStats', userName);
+  const data = {
+    password: password,
+    createdAt: Date.now(),
+    credits: 5,
+    history: [],
+    totalAdViews: 0
+  };
+  await setDoc(ref, data);
+  return data;
+};
+
