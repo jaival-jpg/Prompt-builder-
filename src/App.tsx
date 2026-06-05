@@ -149,6 +149,22 @@ export default function App() {
 
   useEffect(() => {
     if (userName) {
+      // Sync from cloud database on load/refresh so data is permanently stored and never lost
+      getUserDoc(userName).then((doc) => {
+        if (doc) {
+          if (doc.history && Array.isArray(doc.history)) {
+            setHistory(doc.history);
+            localStorage.setItem('prompt_history', JSON.stringify(doc.history));
+          }
+          if (doc.credits !== undefined) {
+            setCredits(doc.credits);
+            localStorage.setItem('credits', doc.credits.toString());
+          }
+        }
+      }).catch((e) => {
+        console.error("Error fetching user data from firestore on mount:", e);
+      });
+
       // Analytics tracking (User opens per day)
       const today = new Date().toISOString().split('T')[0];
       if (!(window as any).appOpenedRecorded) {
@@ -835,21 +851,21 @@ const BottomNav = ({ currentTab, setCurrentTab, t, onStartNew }: { currentTab: s
   if (isKeyboardOpen) return null;
 
   return (
-    <div className="fixed bottom-3 left-4 right-4 sm:left-1/2 sm:right-auto sm:w-[380px] sm:-translate-x-1/2 z-50 md:hidden">
-      <div className="bg-[#1A1625]/90 backdrop-blur-3xl border border-white/10 shadow-[0_20px_40px_-10px_rgba(0,0,0,0.8),0_0_20px_rgba(168,85,247,0.15)] rounded-full px-5 py-1.5 flex justify-between items-center relative">
+    <div className="fixed bottom-4 left-4 right-4 sm:left-1/2 sm:right-auto sm:w-[410px] sm:-translate-x-1/2 z-50 md:hidden">
+      <div className="bg-gradient-to-r from-[#170E32]/95 via-[#0C1740]/95 to-[#04081E]/95 backdrop-blur-3xl border border-blue-500/30 shadow-[0_20px_50px_rgba(0,0,0,0.9),0_0_30px_rgba(99,102,241,0.2)] rounded-[28px] px-6 py-3 flex justify-between items-center relative">
         <NavItem icon={<Home />} label={t.home} isActive={currentTab === 'home'} onClick={() => setCurrentTab('home')} />
         <NavItem icon={<FileText />} label={t.notes} isActive={currentTab === 'notes'} onClick={() => setCurrentTab('notes')} />
         
-        {/* FAB */}
-        <div className="relative -top-5">
+        {/* BIG CURVED SQUARE FAB */}
+        <div className="relative -top-6">
           <button 
             onClick={onStartNew}
-            className={`rounded-full p-1 bg-gradient-to-b from-[#2A253C] to-[#120F1C] border border-white/20 shadow-[0_8px_30px_rgba(168,85,247,0.5)] transition-all hover:scale-110 active:scale-95 ${currentTab === 'builder' ? 'ring-2 ring-purple-500 shadow-[0_0_30px_rgba(168,85,247,0.8)]' : ''}`}
+            className={`rounded-xl p-0.5 bg-gradient-to-b from-[#8B5CF6] via-[#5B3EBA] to-[#3B82F6] border-[0.5px] border-white/15 shadow-[0_12px_36px_rgba(139,92,246,0.65)] transition-all hover:scale-110 active:scale-95 ${currentTab === 'builder' ? 'ring-1 ring-purple-400 shadow-[0_0_40px_rgba(139,92,246,0.95)]' : ''}`}
           >
             <img 
               src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhiP8PtPcn_lYed8oigp1S0lt3qnSwtz0ifjHgxc3iKF01mdzKLRtm5Bq8gjxQd4-j69avgRw_AmPYyonScYLVsoXQ0tYn-AyRfnRGPEaoVcCucFH6M6j_gLA7pbPkbEfP2mv6qEkoI4I07ZDs-b_dnX85SgV4qM2lIekCWSJeilBojFT1x7vpVD5VTR5D2/s1120/45435.png" 
               alt="Create Prompt" 
-              className={`w-[44px] h-[44px] object-cover rounded-full ${currentTab === 'builder' ? 'animate-pulse' : ''}`} 
+              className={`w-[52px] h-[52px] object-cover rounded-[10px] ${currentTab === 'builder' ? 'animate-pulse' : ''}`} 
             />
           </button>
         </div>
@@ -862,9 +878,9 @@ const BottomNav = ({ currentTab, setCurrentTab, t, onStartNew }: { currentTab: s
 };
 
 const NavItem = ({ icon, label, isActive, onClick }: any) => (
-  <button onClick={onClick} className={`flex flex-col items-center justify-center w-12 gap-1 transition-colors ${isActive ? 'text-purple-400' : 'text-gray-500 hover:text-gray-300'}`}>
-    {React.cloneElement(icon, { size: 20, className: isActive ? 'drop-shadow-[0_0_8px_rgba(168,85,247,0.5)]' : '' })}
-    <span className="text-[9px] font-semibold tracking-wide">{label}</span>
+  <button onClick={onClick} className={`flex flex-col items-center justify-center w-14 gap-1.5 transition-all active:scale-95 ${isActive ? 'text-purple-400 font-extrabold' : 'text-gray-400 hover:text-white font-medium'}`}>
+    {React.cloneElement(icon, { size: 22, className: isActive ? 'drop-shadow-[0_0_8px_rgba(168,85,247,0.6)] text-purple-300 animate-none' : 'opacity-80' })}
+    <span className={`text-[10px] tracking-wide transition-colors ${isActive ? 'text-purple-300' : 'text-gray-400 font-semibold'}`}>{label}</span>
   </button>
 );
 
@@ -1359,6 +1375,17 @@ const NotesPage = ({ history, setHistory, editingNote, setEditingNote, t }: any)
                     className="w-full text-left px-4 py-3 text-white hover:bg-white/5 flex items-center gap-3 text-sm"
                   >
                     <Share2 size={16} /> Share
+                  </button>
+                  <button 
+                    onClick={() => {
+                      const updatedHistory = history.filter((h: any) => h.id !== editingNote.id);
+                      setHistory(updatedHistory);
+                      setEditingNote(null);
+                      setShowMenu(false);
+                    }}
+                    className="w-full text-left px-4 py-3 text-red-400 hover:bg-red-500/10 flex items-center gap-3 text-sm border-t border-white/5"
+                  >
+                    <Trash2 size={16} /> Delete Note
                   </button>
                   <div className="px-4 py-3 border-t border-white/5">
                     <div className="text-xs text-gray-400 mb-2">Font Size</div>
