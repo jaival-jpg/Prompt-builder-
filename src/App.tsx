@@ -1450,20 +1450,22 @@ const NotesPage = ({ history, setHistory, editingNote, setEditingNote, t }: any)
           <p>No notes found.</p>
         </div>
       ) : (
-        <div className="columns-1 sm:columns-2 lg:columns-3 gap-5 space-y-5">
+        <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
           {filteredHistory.map((item: any, index: number) => {
             const dotColor = DOT_COLORS[index % DOT_COLORS.length];
             return (
               <div 
                 key={item.id} 
                 onClick={() => setEditingNote(item)}
-                className="break-inside-avoid relative overflow-hidden bg-gradient-to-br from-[#1E1B4B]/30 via-[#0A0817]/95 to-[#020108] rounded-[24px] p-5 cursor-pointer hover:border-indigo-500/50 hover:from-[#251E5C]/50 hover:to-[#050312] transition-all transform hover:-translate-y-1 flex flex-col min-h-[160px] border border-indigo-500/25 shadow-[0_8px_24px_rgba(0,0,0,0.6),0_0_15px_rgba(99,102,241,0.06)] hover:shadow-[0_12px_32px_rgba(0,0,0,0.7),0_0_25px_rgba(168,85,247,0.15)] group"
+                className="aspect-square relative overflow-hidden bg-gradient-to-br from-[#1E1B4B]/30 via-[#0A0817]/95 to-[#020108] rounded-2xl sm:rounded-[24px] p-3.5 sm:p-5 cursor-pointer hover:border-indigo-500/50 hover:from-[#251E5C]/50 hover:to-[#050312] transition-all transform hover:-translate-y-1 flex flex-col justify-between border border-indigo-500/25 shadow-[0_8px_24px_rgba(0,0,0,0.6),0_0_15px_rgba(99,102,241,0.06)] hover:shadow-[0_12px_32px_rgba(0,0,0,0.7),0_0_25px_rgba(168,85,247,0.15)] group"
               >
                 <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-indigo-500 to-transparent opacity-65" />
-                <h3 className="text-white font-bold text-[15px] mb-3 leading-snug tracking-tight group-hover:text-indigo-200 transition-colors">{item.topic}</h3>
-                <p className="text-gray-300 text-xs whitespace-pre-wrap line-clamp-5 leading-relaxed flex-1">{item.prompt}</p>
-                <div className="flex justify-end mt-4">
-                  <div className={`w-3 h-3 rounded-full ${dotColor} shadow-[0_0_8px_rgba(255,255,255,0.2)] group-hover:scale-125 transition-transform`} />
+                <div className="flex flex-col flex-1 overflow-hidden">
+                  <h3 className="text-white font-bold text-xs sm:text-[15px] mb-1 sm:mb-2.5 leading-snug tracking-tight group-hover:text-indigo-200 transition-colors line-clamp-2">{item.topic}</h3>
+                  <p className="text-gray-300 text-[10px] sm:text-xs whitespace-pre-wrap line-clamp-4 sm:line-clamp-5 leading-relaxed flex-1 overflow-hidden">{item.prompt}</p>
+                </div>
+                <div className="flex justify-end mt-1 sm:mt-2">
+                  <div className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full ${dotColor} shadow-[0_0_8px_rgba(255,255,255,0.2)] group-hover:scale-125 transition-transform`} />
                 </div>
               </div>
             );
