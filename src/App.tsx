@@ -382,16 +382,174 @@ export default function App() {
 
   return (
     <div className={`min-h-screen bg-[#05030A] text-white font-sans selection:bg-purple-500/30 font-inter ${theme === 'light' ? 'light-theme' : ''}`}>
-      <AnimatePresence mode="wait">
-        {currentTab === 'home' && <HomePage key="home" setCurrentTab={setCurrentTab} history={history} setEditData={setEditData} credits={credits} setCredits={setCredits} t={t} setAdConfig={setAdConfig} onStartNew={handleStartNew} />}
-        {currentTab === 'notes' && <NotesPage key="notes" history={history} setHistory={setHistory} editingNote={editingNote} setEditingNote={setEditingNote} t={t} />}
-        {currentTab === 'builder' && <BuilderPage key="builder" setCurrentTab={setCurrentTab} history={history} setHistory={setHistory} editData={editData} setEditData={setEditData} setEditingNote={setEditingNote} credits={credits} setCredits={setCredits} t={t} setAdConfig={setAdConfig} />}
-        {currentTab === 'history' && <HistoryPage key="history" history={history} onEdit={handleEdit} onDelete={handleDelete} t={t} />}
-        {currentTab === 'settings' && <SettingsPage key="settings" theme={theme} setTheme={setTheme} language={language} setLanguage={setLanguage} setCurrentTab={setCurrentTab} t={t} apiKey={globalApiKey} setApiKey={setGlobalApiKey} onLogout={handleLogout} />}
-        {currentTab === 'about' && <AboutPage key="about" setCurrentTab={setCurrentTab} t={t} />}
-        {currentTab === 'ad_view' && <AdViewPage key="ad_view" setCurrentTab={setCurrentTab} setCredits={setCredits} adConfig={adConfig} userName={userName} />}
-        {currentTab === 'admin' && <AdminPage key="admin" setCurrentTab={setCurrentTab} />}
-      </AnimatePresence>
+      <div className="flex flex-col md:flex-row min-h-screen">
+        {/* Left Desktop Sidebar (visible on md and above) */}
+        {currentTab !== 'ad_view' && currentTab !== 'admin' && (
+          <aside className="hidden md:flex w-72 bg-[#0C0A14] border-r border-white/5 flex-col p-6 sticky top-0 h-screen justify-between z-40 shrink-0">
+            {/* Upper Section */}
+            <div className="space-y-6">
+              {/* BRANDING */}
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#A78BFA] to-[#60A5FA] flex items-center justify-center shadow-lg">
+                  <Sparkles size={22} className="text-white" />
+                </div>
+                <div>
+                  <h1 className="text-lg font-bold bg-gradient-to-r from-[#A78BFA] to-[#60A5FA] bg-clip-text text-transparent tracking-tight">Prompt Builder</h1>
+                  <p className="text-[10px] text-gray-500 font-medium">SaaS Workspace</p>
+                </div>
+              </div>
+
+              {/* USER STATS PROFILE */}
+              <div className="bg-[#12101F] border border-white/5 rounded-2xl p-4 space-y-3 shadow-inner">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 overflow-hidden">
+                    <div className="w-8 h-8 rounded-full bg-purple-500/10 flex items-center justify-center text-purple-400 font-bold border border-purple-500/20 text-xs shrink-0">
+                      {userName ? userName.charAt(0).toUpperCase() : 'U'}
+                    </div>
+                    <div className="leading-tight overflow-hidden">
+                      <p className="text-[10px] text-gray-500 font-semibold uppercase">Profile</p>
+                      <p className="text-sm font-bold text-white truncate max-w-[120px]">{userName || 'Guest'}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1 bg-[#1A162D] border border-yellow-500/30 px-2 py-1 rounded-full shrink-0">
+                    <span className="text-xs">🪙</span>
+                    <span className="font-bold text-yellow-200 text-xs">{credits}</span>
+                  </div>
+                </div>
+
+                <button 
+                  onClick={() => {
+                    setAdConfig(null);
+                    setCurrentTab('ad_view');
+                  }}
+                  className="w-full py-2 bg-yellow-500 hover:bg-yellow-400 text-black font-bold rounded-xl text-xs transition-transform active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer shadow-sm shadow-yellow-500/5"
+                >
+                  <PlayCircle size={14} /> Watch Ad (+1 Credit)
+                </button>
+              </div>
+
+              {/* NAVIGATION LINKS */}
+              <nav className="space-y-1.5 pt-2">
+                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider px-3 mb-2">Workspace Navigation</p>
+                
+                <button 
+                  onClick={() => setCurrentTab('home')}
+                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                    currentTab === 'home' 
+                      ? 'bg-purple-600/10 text-purple-400 border border-purple-500/20' 
+                      : 'text-gray-400 hover:text-white hover:bg-white/5 border border-transparent'
+                  }`}
+                >
+                  <Home size={18} />
+                  <span>{t.home || 'Home'}</span>
+                </button>
+
+                <button 
+                  onClick={handleStartNew}
+                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                    currentTab === 'builder' 
+                      ? 'bg-purple-600/10 text-purple-400 border border-purple-500/20' 
+                      : 'text-gray-400 hover:text-white hover:bg-white/5 border border-transparent'
+                  }`}
+                >
+                  <Wand2 size={18} />
+                  <span>Start New Prompt</span>
+                </button>
+
+                <button 
+                  onClick={() => setCurrentTab('notes')}
+                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                    currentTab === 'notes' 
+                      ? 'bg-purple-600/10 text-purple-400 border border-purple-500/20' 
+                      : 'text-gray-400 hover:text-white hover:bg-white/5 border border-transparent'
+                  }`}
+                >
+                  <FileText size={18} />
+                  <span>{t.notes || 'Notes'}</span>
+                </button>
+
+                <button 
+                  onClick={() => setCurrentTab('history')}
+                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                    currentTab === 'history' 
+                      ? 'bg-purple-600/10 text-purple-400 border border-purple-500/20' 
+                      : 'text-gray-400 hover:text-white hover:bg-white/5 border border-transparent'
+                  }`}
+                >
+                  <History size={18} />
+                  <span>{t.history || 'History'}</span>
+                </button>
+
+                <button 
+                  onClick={() => setCurrentTab('settings')}
+                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                    currentTab === 'settings' 
+                      ? 'bg-purple-600/10 text-purple-400 border border-purple-500/20' 
+                      : 'text-gray-400 hover:text-white hover:bg-white/5 border border-transparent'
+                  }`}
+                >
+                  <SettingsIcon size={18} />
+                  <span>{t.settings || 'Settings'}</span>
+                </button>
+
+                <button 
+                  onClick={() => setCurrentTab('about')}
+                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                    currentTab === 'about' 
+                      ? 'bg-purple-600/10 text-purple-400 border border-purple-500/20' 
+                      : 'text-gray-400 hover:text-white hover:bg-white/5 border border-transparent'
+                  }`}
+                >
+                  <Info size={18} />
+                  <span>About</span>
+                </button>
+
+                {userName === 'admin' && (
+                  <button 
+                    onClick={() => setCurrentTab('admin')}
+                    className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                      currentTab === 'admin' 
+                        ? 'bg-red-600/10 text-red-400 border border-red-500/20' 
+                        : 'text-gray-400 hover:text-red-400 hover:bg-red-500/5 border border-transparent'
+                    }`}
+                  >
+                    <Shield size={18} />
+                    <span>Admin Panel</span>
+                  </button>
+                )}
+              </nav>
+            </div>
+
+            {/* Bottom logout block */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 justify-between px-3 text-xs text-gray-500 font-semibold border-t border-white/5 pt-4">
+                <span>V2.0.0</span>
+                <span>Active Session</span>
+              </div>
+              <button 
+                onClick={handleLogout}
+                className="w-full py-2.5 rounded-xl bg-red-500/5 hover:bg-red-500/10 text-red-500 font-bold border border-red-500/10 hover:border-red-500/20 transition-all text-xs flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <LogOut size={14} /> Log Out
+              </button>
+            </div>
+          </aside>
+        )}
+
+        {/* Right workspace container */}
+        <main className="flex-1 min-h-screen">
+          <AnimatePresence mode="wait">
+            {currentTab === 'home' && <HomePage key="home" setCurrentTab={setCurrentTab} history={history} setEditData={setEditData} credits={credits} setCredits={setCredits} t={t} setAdConfig={setAdConfig} onStartNew={handleStartNew} />}
+            {currentTab === 'notes' && <NotesPage key="notes" history={history} setHistory={setHistory} editingNote={editingNote} setEditingNote={setEditingNote} t={t} />}
+            {currentTab === 'builder' && <BuilderPage key="builder" setCurrentTab={setCurrentTab} history={history} setHistory={setHistory} editData={editData} setEditData={setEditData} setEditingNote={setEditingNote} credits={credits} setCredits={setCredits} t={t} setAdConfig={setAdConfig} />}
+            {currentTab === 'history' && <HistoryPage key="history" history={history} onEdit={handleEdit} onDelete={handleDelete} t={t} />}
+            {currentTab === 'settings' && <SettingsPage key="settings" theme={theme} setTheme={setTheme} language={language} setLanguage={setLanguage} setCurrentTab={setCurrentTab} t={t} apiKey={globalApiKey} setApiKey={setGlobalApiKey} onLogout={handleLogout} />}
+            {currentTab === 'about' && <AboutPage key="about" setCurrentTab={setCurrentTab} t={t} />}
+            {currentTab === 'ad_view' && <AdViewPage key="ad_view" setCurrentTab={setCurrentTab} setCredits={setCredits} adConfig={adConfig} userName={userName} />}
+            {currentTab === 'admin' && <AdminPage key="admin" setCurrentTab={setCurrentTab} />}
+          </AnimatePresence>
+        </main>
+      </div>
       {currentTab !== 'ad_view' && currentTab !== 'admin' && <BottomNav currentTab={currentTab} setCurrentTab={setCurrentTab} t={t} onStartNew={handleStartNew} />}
 
       <AnimatePresence>
@@ -677,7 +835,7 @@ const BottomNav = ({ currentTab, setCurrentTab, t, onStartNew }: { currentTab: s
   if (isKeyboardOpen) return null;
 
   return (
-    <div className="fixed bottom-3 left-4 right-4 sm:left-1/2 sm:right-auto sm:w-[380px] sm:-translate-x-1/2 z-50">
+    <div className="fixed bottom-3 left-4 right-4 sm:left-1/2 sm:right-auto sm:w-[380px] sm:-translate-x-1/2 z-50 md:hidden">
       <div className="bg-[#1A1625]/90 backdrop-blur-3xl border border-white/10 shadow-[0_20px_40px_-10px_rgba(0,0,0,0.8),0_0_20px_rgba(168,85,247,0.15)] rounded-full px-5 py-1.5 flex justify-between items-center relative">
         <NavItem icon={<Home />} label={t.home} isActive={currentTab === 'home'} onClick={() => setCurrentTab('home')} />
         <NavItem icon={<FileText />} label={t.notes} isActive={currentTab === 'notes'} onClick={() => setCurrentTab('notes')} />
@@ -894,7 +1052,7 @@ const HomePage = ({ setCurrentTab, history, setEditData, credits, setCredits, t,
   };
 
   return (
-    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="p-4 sm:p-6 pb-32 max-w-lg mx-auto w-full relative">
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="p-4 sm:p-6 md:p-8 pb-32 max-w-lg md:max-w-4xl lg:max-w-6xl mx-auto w-full relative">
       <header className="mb-6 mt-4 flex items-center justify-between">
         <div>
           <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-[#A78BFA] to-[#60A5FA] bg-clip-text text-transparent mb-1 tracking-tight">Prompt Builder</h1>
@@ -1150,10 +1308,12 @@ const NotesPage = ({ history, setHistory, editingNote, setEditingNote, t }: any)
 
   if (editingNote) {
     return (
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="fixed inset-0 z-[60] flex flex-col bg-black">
-        {/* Header */}
-        <div className="flex items-center justify-between px-4 py-4 bg-gradient-to-r from-violet-600 to-blue-600 border-b border-white/5">
-          <div className="flex items-center gap-4 flex-1">
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="fixed inset-0 z-[60] flex flex-col bg-black md:bg-[#05030A]">
+        {/* Inner container centered on desktop */}
+        <div className="flex-1 w-full max-w-4xl mx-auto flex flex-col bg-black md:border-x md:border-white/5 md:shadow-2xl md:my-6 md:rounded-[32px] overflow-hidden">
+          {/* Header */}
+          <div className="flex items-center justify-between px-4 py-4 bg-gradient-to-r from-violet-600 to-blue-600 border-b border-white/5">
+            <div className="flex items-center gap-4 flex-1">
             <button onClick={() => setEditingNote(null)} className="hover:bg-white/10 p-1 rounded-full transition-colors">
               <ArrowLeft size={24} className="text-white" />
             </button>
@@ -1241,12 +1401,13 @@ const NotesPage = ({ history, setHistory, editingNote, setEditingNote, t }: any)
             <Copy size={20} />
           </button>
         </div>
-      </motion.div>
-    );
-  }
+      </div>
+    </motion.div>
+  );
+}
 
   return (
-    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="p-4 sm:p-6 pb-32 max-w-lg mx-auto w-full min-h-screen bg-[#05030A]">
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="p-4 sm:p-6 md:p-8 pb-32 max-w-lg md:max-w-4xl lg:max-w-6xl mx-auto w-full min-h-screen bg-[#05030A]">
       <header className="flex items-center justify-between mb-8 mt-2">
         <h1 className="text-2xl sm:text-[28px] font-bold text-white tracking-wide">Prompt Notes</h1>
         <div className="w-10 h-10 rounded-full flex items-center justify-center shadow-[0_0_10px_rgba(139,92,246,0.3)] overflow-hidden">
@@ -1600,7 +1761,7 @@ Return ONLY the generated prompt text in Markdown format. Do not include any con
   };
 
   return (
-    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="p-4 sm:p-6 pb-32 max-w-lg mx-auto w-full min-h-screen flex flex-col">
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="p-4 sm:p-6 md:p-8 pb-32 max-w-lg md:max-w-4xl lg:max-w-6xl mx-auto w-full min-h-screen flex flex-col">
       <header className="flex items-center mb-8 mt-4">
         <div className="w-10 h-10 rounded-full flex items-center justify-center mr-4 shadow-[0_0_10px_rgba(139,92,246,0.3)] overflow-hidden">
           <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhiP8PtPcn_lYed8oigp1S0lt3qnSwtz0ifjHgxc3iKF01mdzKLRtm5Bq8gjxQd4-j69avgRw_AmPYyonScYLVsoXQ0tYn-AyRfnRGPEaoVcCucFH6M6j_gLA7pbPkbEfP2mv6qEkoI4I07ZDs-b_dnX85SgV4qM2lIekCWSJeilBojFT1x7vpVD5VTR5D2/s1120/45435.png" alt="Robot" className="w-full h-full object-cover rounded-full" />
@@ -1958,7 +2119,7 @@ Return ONLY the generated prompt text in Markdown format. Do not include any con
 };
 
 const HistoryPage = ({ history, onEdit, onDelete, t }: any) => (
-  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="p-4 sm:p-6 pb-32 max-w-lg mx-auto w-full">
+  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="p-4 sm:p-6 md:p-8 pb-32 max-w-lg md:max-w-4xl lg:max-w-6xl mx-auto w-full">
     <header className="flex items-center mb-6 mt-4">
       <div className="w-10 h-10 rounded-full bg-yellow-500/10 flex items-center justify-center mr-4 text-yellow-500">
         <History size={20} />
@@ -2070,7 +2231,7 @@ const SettingsPage = ({ theme, setTheme, language, setLanguage, setCurrentTab, t
   const initials = name.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase();
 
   return (
-    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="p-4 sm:p-6 pb-32 max-w-lg mx-auto w-full">
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="p-4 sm:p-6 md:p-8 pb-32 max-w-lg md:max-w-4xl lg:max-w-6xl mx-auto w-full">
       <header className="flex items-center mb-8 mt-4">
         <div className="w-10 h-10 rounded-full bg-gray-500/10 flex items-center justify-center mr-4 text-gray-400">
           <SettingsIcon size={20} />
@@ -2315,7 +2476,7 @@ const AboutPage = ({ setCurrentTab, t }: any) => {
   };
 
   return (
-    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="p-4 sm:p-6 pb-32 max-w-lg mx-auto w-full">
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="p-4 sm:p-6 md:p-8 pb-32 max-w-lg md:max-w-4xl lg:max-w-6xl mx-auto w-full">
       <header className="flex items-center mb-8 mt-4">
         <button onClick={() => setCurrentTab('settings')} className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center mr-4 text-white hover:bg-white/10 transition-colors">
           <ArrowLeft size={20} />
@@ -2463,7 +2624,7 @@ const AdminPage = ({ setCurrentTab }: any) => {
   };
 
   return (
-    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="min-h-screen bg-[#05030A] text-white p-4 sm:p-6 pb-32 max-w-lg mx-auto w-full">
+    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="min-h-screen bg-[#05030A] text-white p-4 sm:p-6 md:p-8 pb-32 max-w-lg md:max-w-4xl lg:max-w-6xl mx-auto w-full">
       <header className="flex items-center mb-8 mt-4">
         <button onClick={() => activeAdminTab === 'home' ? setCurrentTab('home') : setActiveAdminTab('home')} className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center mr-4 text-white hover:bg-white/10 transition-colors">
           <ArrowLeft size={20} />
