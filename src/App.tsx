@@ -1070,7 +1070,7 @@ const HomePage = ({ setCurrentTab, history, setEditData, credits, setCredits, t,
       <AnimatePresence>
         {showCreditsModal && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }} className="bg-[#120F1C] border border-white/10 rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl shadow-yellow-500/10">
+            <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }} className="bg-gradient-to-b from-[#0F1D45] to-[#040714] border border-blue-500/40 rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl shadow-blue-500/15">
               <div className="p-6">
                 <div className="flex justify-between items-start mb-6">
                   <div className="flex items-center gap-3">
@@ -1087,19 +1087,19 @@ const HomePage = ({ setCurrentTab, history, setEditData, credits, setCredits, t,
                   </button>
                 </div>
 
-                <div className="bg-[#161423] rounded-2xl p-4 border border-white/5 mb-2">
+                <div className="bg-[#090D1F] rounded-2xl p-4 border border-blue-500/20 mb-2">
                   <p className="text-sm text-gray-300 mb-4 leading-relaxed">
                     You need <strong className="text-white">1 Credit</strong> to generate a new AI prompt.
                   </p>
                   
-                  <div className="bg-gradient-to-r from-yellow-500/10 to-transparent p-4 rounded-xl border border-yellow-500/20 flex flex-col gap-3">
+                  <div className="bg-gradient-to-r from-blue-500/10 to-transparent p-4 rounded-xl border border-blue-500/20 flex flex-col gap-3">
                     <div className="flex items-center gap-2">
-                      <PlayCircle size={18} className="text-yellow-400" />
-                      <span className="text-sm font-semibold text-yellow-100">Watch Ads & Earn Credits</span>
+                      <PlayCircle size={18} className="text-blue-400" />
+                      <span className="text-sm font-semibold text-blue-100">Watch Ads & Earn Credits</span>
                     </div>
                     <button 
                       onClick={watchAd}
-                      className="w-full py-2.5 bg-yellow-500 hover:bg-yellow-400 text-black font-bold rounded-lg transition-colors flex items-center justify-center gap-2"
+                      className="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg transition-colors flex items-center justify-center gap-2 shadow-sm shadow-blue-500/20"
                     >
                       Watch Ad (+1 Credit)
                     </button>
@@ -1113,56 +1113,69 @@ const HomePage = ({ setCurrentTab, history, setEditData, credits, setCredits, t,
 
       <div 
         onClick={() => setShowStartOptions(true)}
-        className="relative overflow-hidden rounded-[28px] bg-gradient-to-br from-[#2A1B4E] to-[#161224] p-6 mb-6 border border-purple-500/20 cursor-pointer group shadow-xl shadow-purple-900/10"
+        className="relative overflow-hidden rounded-[28px] bg-gradient-to-br from-[#1E3A8A]/25 via-[#0B0F24]/95 to-[#020512] p-6 sm:p-8 mb-6 border border-[#3B82F6]/50 hover:border-[#A78BFA]/60 cursor-pointer group shadow-[0_0_30px_rgba(59,130,246,0.15)] hover:shadow-[0_0_40px_rgba(139,92,246,0.25)] transition-all duration-300 transform hover:-translate-y-1"
       >
-        <div className="absolute top-6 right-6 text-purple-400/40 group-hover:text-purple-400/60 transition-colors">
-          <Sparkles size={32} strokeWidth={1.5} />
+        <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-blue-500 via-purple-500 to-cyan-400 group-hover:scale-x-105 transition-transform origin-left duration-500" />
+        <div className="absolute top-6 right-6 text-[#60A5FA]/40 group-hover:text-[#A78BFA]/80 group-hover:rotate-12 transition-all duration-500">
+          <Sparkles size={36} strokeWidth={1.5} className="filter drop-shadow-[0_0_8px_rgba(167,139,250,0.6)]" />
         </div>
-        <div className="w-12 h-12 rounded-full flex items-center justify-center mb-5 shadow-[0_0_15px_rgba(139,92,246,0.4)] overflow-hidden">
+        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-600/20 to-purple-600/20 flex items-center justify-center mb-5 border border-blue-500/30 shadow-[0_0_20px_rgba(59,130,246,0.3)] overflow-hidden">
           <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhiP8PtPcn_lYed8oigp1S0lt3qnSwtz0ifjHgxc3iKF01mdzKLRtm5Bq8gjxQd4-j69avgRw_AmPYyonScYLVsoXQ0tYn-AyRfnRGPEaoVcCucFH6M6j_gLA7pbPkbEfP2mv6qEkoI4I07ZDs-b_dnX85SgV4qM2lIekCWSJeilBojFT1x7vpVD5VTR5D2/s1120/45435.png" alt="Robot" className="w-full h-full object-cover rounded-full" />
         </div>
-        <h2 className="text-2xl font-bold text-white mb-2">Create Prompt</h2>
-        <p className="text-gray-400 text-sm mb-6 max-w-[85%] leading-relaxed">Use our step-by-step wizard to generate a highly optimized prompt for any AI.</p>
-        <div className="flex items-center text-purple-400 font-medium text-sm group-hover:translate-x-1 transition-transform">
-          Start Building <ArrowRight size={16} className="ml-1.5" />
+        <h2 className="text-2xl sm:text-3xl font-extrabold text-white mb-2 tracking-tight">Create Prompt</h2>
+        <p className="text-gray-300 text-sm mb-6 max-w-[85%] leading-relaxed">Use our step-by-step wizard to generate a highly optimized prompt for any AI.</p>
+        <div className="flex items-center text-blue-400 group-hover:text-purple-300 font-semibold text-sm transition-colors">
+          Start Building <ArrowRight size={16} className="ml-1.5 group-hover:translate-x-1 transition-transform" />
         </div>
       </div>
 
-      <div className="grid grid-cols-1 min-[360px]:grid-cols-2 gap-3 min-[360px]:gap-4 mb-8">
-        <div onClick={() => setCurrentTab('notes')} className="bg-[#120F1C] rounded-[24px] p-4 sm:p-5 border border-white/10 cursor-pointer hover:bg-[#1A1625] transition-all transform hover:-translate-y-1 shadow-[inset_0_1px_2px_rgba(255,255,255,0.15),inset_0_-1px_2px_rgba(0,0,0,0.4),0_8px_20px_rgba(0,0,0,0.5)] hover:shadow-[inset_0_1px_3px_rgba(255,255,255,0.25),inset_0_-1px_2px_rgba(0,0,0,0.5),0_12px_25px_rgba(0,0,0,0.7)]">
-          <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center mb-4 text-blue-400">
-            <FileText size={20} />
+      <div className="grid grid-cols-1 min-[360px]:grid-cols-2 gap-4 mb-8">
+        <div 
+          onClick={() => setCurrentTab('notes')} 
+          className="relative overflow-hidden bg-gradient-to-br from-[#0F1E4A] via-[#080C1D] to-[#030614] rounded-[24px] p-5 sm:p-6 border border-blue-500/35 hover:border-purple-500/50 cursor-pointer transition-all transform hover:-translate-y-1 shadow-[0_8px_24px_rgba(0,0,0,0.6),0_0_15px_rgba(59,130,246,0.1)] hover:shadow-[0_12px_32px_rgba(0,0,0,0.7),0_0_25px_rgba(168,85,247,0.15)] group"
+        >
+          <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-blue-500 to-transparent opacity-60" />
+          <div className="w-12 h-12 rounded-2xl bg-blue-500/15 flex items-center justify-center mb-4 text-blue-400 border border-blue-500/20 group-hover:scale-110 group-hover:bg-blue-500/20 transition-all duration-300">
+            <FileText size={22} />
           </div>
-          <h3 className="text-white font-semibold mb-1 text-sm sm:text-base">Prompt Notes</h3>
-          <p className="text-gray-500 text-xs">Your saved prompts</p>
+          <h3 className="text-white font-bold mb-1 text-base sm:text-lg tracking-tight">Prompt Notes</h3>
+          <p className="text-gray-400 text-xs">Your saved prompts</p>
         </div>
-        <div onClick={() => setCurrentTab('history')} className="bg-[#120F1C] rounded-[24px] p-4 sm:p-5 border border-white/10 cursor-pointer hover:bg-[#1A1625] transition-all transform hover:-translate-y-1 shadow-[inset_0_1px_2px_rgba(255,255,255,0.15),inset_0_-1px_2px_rgba(0,0,0,0.4),0_8px_20px_rgba(0,0,0,0.5)] hover:shadow-[inset_0_1px_3px_rgba(255,255,255,0.25),inset_0_-1px_2px_rgba(0,0,0,0.5),0_12px_25px_rgba(0,0,0,0.7)]">
-          <div className="w-10 h-10 rounded-full bg-yellow-500/10 flex items-center justify-center mb-4 text-yellow-500">
-            <History size={20} />
+        <div 
+          onClick={() => setCurrentTab('history')} 
+          className="relative overflow-hidden bg-gradient-to-br from-[#0F1E4A] via-[#080C1D] to-[#030614] rounded-[24px] p-5 sm:p-6 border border-blue-500/35 hover:border-purple-500/50 cursor-pointer transition-all transform hover:-translate-y-1 shadow-[0_8px_24px_rgba(0,0,0,0.6),0_0_15px_rgba(59,130,246,0.1)] hover:shadow-[0_12px_32px_rgba(0,0,0,0.7),0_0_25px_rgba(168,85,247,0.15)] group"
+        >
+          <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-yellow-500 to-transparent opacity-60" />
+          <div className="w-12 h-12 rounded-2xl bg-yellow-500/15 flex items-center justify-center mb-4 text-yellow-500 border border-yellow-500/20 group-hover:scale-110 group-hover:bg-yellow-500/20 transition-all duration-300">
+            <History size={22} />
           </div>
-          <h3 className="text-white font-semibold mb-1 text-sm sm:text-base">History</h3>
-          <p className="text-gray-500 text-xs">Your past creations</p>
+          <h3 className="text-white font-bold mb-1 text-base sm:text-lg tracking-tight">History</h3>
+          <p className="text-gray-400 text-xs">Your past creations</p>
         </div>
       </div>
 
       <AdsterraBanner />
 
-      <div>
+      <div className="mt-8">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-bold text-white">Recent</h3>
-          <button onClick={() => setCurrentTab('history')} className="text-purple-400 text-xs font-medium uppercase tracking-wider">View All</button>
+          <h3 className="text-lg font-bold text-white tracking-tight">Recent Creations</h3>
+          <button onClick={() => setCurrentTab('history')} className="text-blue-400 hover:text-purple-300 text-xs font-semibold uppercase tracking-wider transition-colors">View All</button>
         </div>
         {history && history.length > 0 ? (
-          <div className="space-y-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             {history.slice(0, 2).map((item: any) => (
-              <div key={item.id} onClick={() => setCurrentTab('history')} className="bg-[#120F1C] rounded-2xl p-4 border border-white/10 cursor-pointer hover:border-white/20 hover:bg-[#1A1625] transition-all transform hover:-translate-y-1 shadow-[inset_0_1px_2px_rgba(255,255,255,0.15),inset_0_-1px_2px_rgba(0,0,0,0.4),0_8px_20px_rgba(0,0,0,0.5)] hover:shadow-[inset_0_1px_3px_rgba(255,255,255,0.25),inset_0_-1px_2px_rgba(0,0,0,0.5),0_12px_25px_rgba(0,0,0,0.7)]">
-                <h4 className="text-white font-medium text-sm truncate">{item.topic}</h4>
-                <p className="text-gray-500 text-xs mt-1 truncate">{item.prompt}</p>
+              <div 
+                key={item.id} 
+                onClick={() => setCurrentTab('history')} 
+                className="relative overflow-hidden bg-gradient-to-r from-[#0F1E4A]/40 via-[#080C1D]/80 to-[#030614] rounded-2xl p-4 sm:p-5 border border-blue-500/30 cursor-pointer hover:border-purple-500/50 hover:from-[#11245A]/50 hover:to-[#050C21] transition-all transform hover:-translate-y-0.5 shadow-[0_4px_12px_rgba(0,0,0,0.4),0_0_10px_rgba(59,130,246,0.05)] hover:shadow-[0_8px_20px_rgba(0,0,0,0.6),0_0_18px_rgba(139,92,246,0.1)] flex flex-col justify-between"
+              >
+                <h4 className="text-white font-bold text-sm truncate">{item.topic}</h4>
+                <p className="text-gray-400 text-xs mt-1.5 truncate leading-relaxed">{item.prompt}</p>
               </div>
             ))}
           </div>
         ) : (
-          <div className="text-center py-10 text-gray-600 text-sm bg-[#120F1C] rounded-3xl border border-white/5">
+          <div className="text-center py-12 text-gray-500 text-sm bg-gradient-to-br from-[#0F1E4A]/20 to-[#030614] rounded-3xl border border-blue-500/25 shadow-inner">
             No recent prompts yet.
           </div>
         )}
@@ -1417,39 +1430,40 @@ const NotesPage = ({ history, setHistory, editingNote, setEditingNote, t }: any)
 
       <div className="flex items-center gap-3 mb-8">
         <div className="flex-1 relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-blue-400" size={18} />
           <input 
             type="text" 
             placeholder="Search note..." 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-[#161423] rounded-2xl py-4 pl-12 pr-4 text-sm text-white placeholder-gray-500 focus:outline-none"
+            className="w-full bg-gradient-to-r from-[#0F1E4A]/80 via-[#0C122C]/90 to-[#040714] rounded-2xl py-4 pl-12 pr-4 text-sm text-white placeholder-gray-400 border border-blue-500/25 focus:border-blue-500/55 focus:outline-none focus:ring-1 focus:ring-blue-500/30 transition-all font-medium"
           />
         </div>
-        <button className="p-4 bg-[#161423] rounded-2xl text-gray-400 hover:text-white transition-colors">
+        <button className="p-4 bg-gradient-to-b from-[#0F1E4A]/80 to-[#040714] border border-blue-500/25 rounded-2xl text-blue-400 hover:text-white hover:border-blue-500/55 transition-colors">
           <LayoutGrid size={20} />
         </button>
       </div>
 
       {filteredHistory.length === 0 ? (
-        <div className="text-center text-gray-500 mt-20">
-          <FileText size={48} className="mx-auto mb-4 opacity-20" />
+        <div className="text-center text-gray-500 mt-20 bg-gradient-to-br from-[#0F1E4A]/20 to-[#030614] rounded-3xl border border-blue-500/25 py-20 px-6 shadow-inner">
+          <FileText size={48} className="mx-auto mb-4 opacity-20 text-blue-400" />
           <p>No notes found.</p>
         </div>
       ) : (
-        <div className="columns-1 min-[400px]:columns-2 gap-3 min-[400px]:gap-4 space-y-3 min-[400px]:space-y-4">
+        <div className="columns-1 sm:columns-2 lg:columns-3 gap-5 space-y-5">
           {filteredHistory.map((item: any, index: number) => {
             const dotColor = DOT_COLORS[index % DOT_COLORS.length];
             return (
               <div 
                 key={item.id} 
                 onClick={() => setEditingNote(item)}
-                className="break-inside-avoid bg-[#161423] rounded-[24px] p-5 cursor-pointer hover:bg-[#1C1A2D] transition-all transform hover:-translate-y-1 relative flex flex-col min-h-[160px] border border-white/10 shadow-[inset_0_1px_2px_rgba(255,255,255,0.15),inset_0_-1px_2px_rgba(0,0,0,0.4),0_8px_20px_rgba(0,0,0,0.5)] hover:shadow-[inset_0_1px_3px_rgba(255,255,255,0.25),inset_0_-1px_2px_rgba(0,0,0,0.5),0_12px_25px_rgba(0,0,0,0.7)]"
+                className="break-inside-avoid relative overflow-hidden bg-gradient-to-br from-[#1E1B4B]/30 via-[#0A0817]/95 to-[#020108] rounded-[24px] p-5 cursor-pointer hover:border-indigo-500/50 hover:from-[#251E5C]/50 hover:to-[#050312] transition-all transform hover:-translate-y-1 flex flex-col min-h-[160px] border border-indigo-500/25 shadow-[0_8px_24px_rgba(0,0,0,0.6),0_0_15px_rgba(99,102,241,0.06)] hover:shadow-[0_12px_32px_rgba(0,0,0,0.7),0_0_25px_rgba(168,85,247,0.15)] group"
               >
-                <h3 className="text-white font-bold text-[15px] mb-3 leading-snug">{item.topic}</h3>
-                <p className="text-gray-400 text-xs whitespace-pre-wrap line-clamp-5 leading-relaxed flex-1">{item.prompt}</p>
+                <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-indigo-500 to-transparent opacity-65" />
+                <h3 className="text-white font-bold text-[15px] mb-3 leading-snug tracking-tight group-hover:text-indigo-200 transition-colors">{item.topic}</h3>
+                <p className="text-gray-300 text-xs whitespace-pre-wrap line-clamp-5 leading-relaxed flex-1">{item.prompt}</p>
                 <div className="flex justify-end mt-4">
-                  <div className={`w-3 h-3 rounded-full ${dotColor}`}></div>
+                  <div className={`w-3 h-3 rounded-full ${dotColor} shadow-[0_0_8px_rgba(255,255,255,0.2)] group-hover:scale-125 transition-transform`} />
                 </div>
               </div>
             );
@@ -2121,49 +2135,54 @@ Return ONLY the generated prompt text in Markdown format. Do not include any con
 const HistoryPage = ({ history, onEdit, onDelete, t }: any) => (
   <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="p-4 sm:p-6 md:p-8 pb-32 max-w-lg md:max-w-4xl lg:max-w-6xl mx-auto w-full">
     <header className="flex items-center mb-6 mt-4">
-      <div className="w-10 h-10 rounded-full bg-yellow-500/10 flex items-center justify-center mr-4 text-yellow-500">
-        <History size={20} />
+      <div className="w-12 h-12 rounded-2xl bg-yellow-500/15 flex items-center justify-center border border-yellow-500/30 shadow-[0_0_15px_rgba(234,179,8,0.25)] mr-4 text-yellow-400">
+        <History size={22} className="animate-pulse" />
       </div>
-      <h1 className="text-3xl font-bold text-white tracking-tight">{t.history}</h1>
+      <h1 className="text-3xl font-extrabold text-white tracking-tight">{t.history}</h1>
     </header>
 
     {/* Adsterra Ads Banner */}
     <AdsterraBanner />
     
     {!history || history.length === 0 ? (
-      <div className="text-center py-16 text-gray-600 bg-[#120F1C] rounded-3xl border border-white/5">
-        <History size={40} className="mx-auto mb-4 opacity-20" />
-        <p className="text-sm">No history yet.</p>
+      <div className="text-center py-20 text-gray-500 bg-gradient-to-br from-[#0F1E4A]/20 to-[#030614] rounded-3xl border border-blue-500/25 shadow-inner">
+        <History size={48} className="mx-auto mb-4 opacity-20 text-blue-400" />
+        <p className="text-sm font-medium">No history yet.</p>
       </div>
     ) : (
-      <div className="space-y-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         {history.map((item: any) => (
-          <div key={item.id} className="bg-[#120F1C] border border-white/5 rounded-2xl p-5 hover:border-white/10 transition-colors">
+          <div 
+            key={item.id} 
+            className="relative overflow-hidden bg-gradient-to-r from-[#0F1D45]/40 via-[#080C1D]/80 to-[#030614] rounded-2xl p-5 border border-blue-500/30 hover:border-purple-500/50 hover:from-[#11245A]/50 hover:to-[#050C21] transition-all transform hover:-translate-y-0.5 shadow-[0_4px_12px_rgba(0,0,0,0.4),0_0_10px_rgba(59,130,246,0.05)] hover:shadow-[0_8px_20px_rgba(0,0,0,0.6),0_0_18px_rgba(139,92,246,0.1)] flex flex-col justify-between"
+          >
+            <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-blue-500 to-transparent opacity-60" />
+            
             <div className="flex justify-between items-start mb-2">
-              <h3 className="text-base font-semibold text-white truncate pr-4">{item.topic}</h3>
-              <span className="text-[10px] text-gray-500 whitespace-nowrap">
+              <h3 className="text-base font-bold text-white truncate pr-4 tracker-tight">{item.topic}</h3>
+              <span className="text-[10px] text-gray-400 font-mono bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 rounded-full whitespace-nowrap">
                 {new Date(item.date).toLocaleDateString()}
               </span>
             </div>
-            <p className="text-gray-500 text-sm line-clamp-2 mb-4">{item.prompt}</p>
+            <p className="text-gray-300 text-sm line-clamp-2 mb-4 leading-relaxed">{item.prompt}</p>
             <div className="flex gap-2">
               <button 
                 onClick={() => {
                   navigator.clipboard.writeText(item.prompt);
                 }}
-                className="flex-1 py-2 bg-white/5 hover:bg-white/10 text-white text-xs font-medium rounded-xl transition-colors flex items-center justify-center"
+                className="flex-1 py-2.5 bg-[#0F1C42] hover:bg-[#142A66] border border-blue-500/30 text-blue-100 hover:text-white text-xs font-semibold rounded-xl transition-all flex items-center justify-center shadow-sm"
               >
                 <Copy size={14} className="mr-1.5" /> Copy
               </button>
               <button 
                 onClick={() => onEdit(item)}
-                className="flex-1 py-2 bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 text-xs font-medium rounded-xl transition-colors flex items-center justify-center"
+                className="flex-1 py-2.5 bg-gradient-to-r from-purple-500/10 to-indigo-500/10 hover:from-purple-500/25 hover:to-indigo-500/25 border border-purple-500/30 text-purple-300 hover:text-white text-xs font-semibold rounded-xl transition-all flex items-center justify-center shadow-sm"
               >
                 <Wand2 size={14} className="mr-1.5" /> Edit
               </button>
               <button 
                 onClick={() => onDelete(item.id)}
-                className="py-2 px-3 bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-medium rounded-xl transition-colors flex items-center justify-center"
+                className="py-2.5 px-3 bg-red-500/10 hover:bg-red-500/20 border border-red-500/25 text-red-400 hover:text-white text-xs font-semibold rounded-xl transition-all flex items-center justify-center shadow-sm"
               >
                 <Trash2 size={14} />
               </button>
@@ -2233,36 +2252,37 @@ const SettingsPage = ({ theme, setTheme, language, setLanguage, setCurrentTab, t
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="p-4 sm:p-6 md:p-8 pb-32 max-w-lg md:max-w-4xl lg:max-w-6xl mx-auto w-full">
       <header className="flex items-center mb-8 mt-4">
-        <div className="w-10 h-10 rounded-full bg-gray-500/10 flex items-center justify-center mr-4 text-gray-400">
-          <SettingsIcon size={20} />
+        <div className="w-12 h-12 rounded-2xl bg-blue-500/15 flex items-center justify-center border border-blue-500/30 shadow-[0_0_15px_rgba(59,130,246,0.25)] mr-4 text-blue-400">
+          <SettingsIcon size={22} className="animate-spin-slow" />
         </div>
-        <h1 className="text-3xl font-bold text-white tracking-tight">{t.settings}</h1>
+        <h1 className="text-3xl font-extrabold text-white tracking-tight">{t.settings}</h1>
       </header>
 
-      <div className="bg-[#120F1C] border border-white/5 rounded-[28px] p-5 mb-8 flex items-center shadow-lg shadow-black/20">
-        <div className="w-14 h-14 rounded-full bg-gradient-to-br from-[#A78BFA] to-[#3B82F6] flex items-center justify-center text-lg font-bold text-white mr-4 shadow-inner">
+      <div className="relative overflow-hidden bg-gradient-to-r from-[#0F1E4A]/80 via-[#0C122C]/90 to-[#040714] border border-blue-500/35 rounded-[28px] p-5 mb-8 flex items-center shadow-2xl hover:border-purple-500/50 transition-all duration-300">
+        <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-blue-500 to-transparent opacity-60" />
+        <div className="w-15 h-15 rounded-full bg-gradient-to-br from-[#A78BFA] to-[#3B82F6] flex items-center justify-center text-xl font-black text-white mr-4 shadow-lg border border-white/20 select-none">
           {initials}
         </div>
         <div>
           <div className="flex items-center gap-2">
-            <h2 className="text-lg font-bold text-white">{name}</h2>
-            <button onClick={() => { setTempName(name); setIsEditingName(true); }} className="text-gray-400 hover:text-white transition-colors">
-              <Edit2 size={14} />
+            <h2 className="text-lg font-bold text-white tracking-tight">{name}</h2>
+            <button onClick={() => { setTempName(name); setIsEditingName(true); }} className="text-blue-400 hover:text-white transition-colors bg-blue-500/10 hover:bg-blue-500/20 p-1.5 rounded-full">
+              <Edit2 size={13} />
             </button>
           </div>
-          <p className="text-gray-500 text-xs mt-0.5">Pro Member</p>
+          <p className="text-blue-400 font-bold text-xs mt-0.5 tracking-wide">Pro Member</p>
         </div>
       </div>
 
       <div className="mb-8">
-        <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3 px-4">Preferences</h3>
-        <div className="bg-[#120F1C] border border-white/5 rounded-3xl overflow-hidden">
-          <SettingItem icon={theme === 'dark' ? <Moon size={18} /> : <Sun size={18} />} label="Appearance" value={theme === 'dark' ? 'Dark' : 'Light'} onClick={toggleTheme} />
-          <div className="h-[1px] bg-white/5 mx-5" />
-          <SettingItem icon={<Languages size={18} />} label="Language" value={langDisplay[language]} onClick={cycleLanguage} />
-          <div className="h-[1px] bg-white/5 mx-5" />
+        <h3 className="text-xs font-bold text-blue-400/85 uppercase tracking-widest mb-3 px-4">Preferences</h3>
+        <div className="bg-gradient-to-b from-[#0F1D45]/45 to-[#040714]/95 border border-blue-500/35 rounded-3xl overflow-hidden shadow-xl">
+          <SettingItem icon={theme === 'dark' ? <Moon size={18} className="text-blue-400" /> : <Sun size={18} className="text-yellow-400" />} label="Appearance" value={theme === 'dark' ? 'Dark' : 'Light'} onClick={toggleTheme} />
+          <div className="h-[1px] bg-blue-500/15 mx-5" />
+          <SettingItem icon={<Languages size={18} className="text-indigo-400" />} label="Language" value={langDisplay[language]} onClick={cycleLanguage} />
+          <div className="h-[1px] bg-blue-500/15 mx-5" />
           <SettingItem 
-            icon={<Sparkles size={18} />} 
+            icon={<Sparkles size={18} className="text-purple-400" />} 
             label="Gemini API Key" 
             value={apiKey ? '••••••••' : 'Setup required'} 
             onClick={() => { setTempApiKey(apiKey); setIsEditingApiKey(true); }} 
@@ -2271,18 +2291,18 @@ const SettingsPage = ({ theme, setTheme, language, setLanguage, setCurrentTab, t
       </div>
 
       <div className="mb-8">
-        <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3 px-4">Account & Security</h3>
-        <div className="bg-[#120F1C] border border-white/5 rounded-3xl overflow-hidden">
-          <SettingItem icon={<Shield size={18} />} label="Privacy & Security" />
-          <div className="h-[1px] bg-white/5 mx-5" />
+        <h3 className="text-xs font-bold text-blue-400/85 uppercase tracking-widest mb-3 px-4">Account & Security</h3>
+        <div className="bg-gradient-to-b from-[#0F1D45]/45 to-[#040714]/95 border border-blue-500/35 rounded-3xl overflow-hidden shadow-xl">
+          <SettingItem icon={<Shield size={18} className="text-cyan-400" />} label="Privacy & Security" />
+          <div className="h-[1px] bg-blue-500/15 mx-5" />
           <SettingItem 
-            icon={<Lock size={18} />} 
+            icon={<Lock size={18} className="text-red-400" />} 
             label="Account Password" 
             value={password || 'Not Set'} 
             onClick={() => { setTempPassword(password); setIsEditingPassword(true); }} 
           />
-          <div className="h-[1px] bg-white/5 mx-5" />
-          <SettingItem icon={<Info size={18} />} label={t.about} onClick={() => setCurrentTab('about')} />
+          <div className="h-[1px] bg-blue-500/15 mx-5" />
+          <SettingItem icon={<Info size={18} className="text-emerald-400" />} label={t.about} onClick={() => setCurrentTab('about')} />
         </div>
       </div>
 
@@ -2290,7 +2310,7 @@ const SettingsPage = ({ theme, setTheme, language, setLanguage, setCurrentTab, t
 
       <button 
         onClick={() => { setLogoutChecked(false); setShowLogoutConfirm(true); }}
-        className="w-full py-4 rounded-2xl bg-red-500/5 text-red-500 font-bold border border-red-500/10 flex items-center justify-center hover:bg-red-500/10 transition-colors mb-6 cursor-pointer"
+        className="w-full py-4 rounded-2xl bg-gradient-to-r from-red-500/10 to-red-500/5 hover:from-red-500/20 hover:to-red-500/15 text-red-400 hover:text-red-300 font-extrabold border border-red-500/25 flex items-center justify-center transition-all shadow-[0_0_15px_rgba(239,68,68,0.05)] hover:shadow-[0_0_20px_rgba(239,68,68,0.15)] mb-6 cursor-pointer"
       >
         <LogOut size={18} className="mr-2" /> Log Out
       </button>
@@ -2478,27 +2498,28 @@ const AboutPage = ({ setCurrentTab, t }: any) => {
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="p-4 sm:p-6 md:p-8 pb-32 max-w-lg md:max-w-4xl lg:max-w-6xl mx-auto w-full">
       <header className="flex items-center mb-8 mt-4">
-        <button onClick={() => setCurrentTab('settings')} className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center mr-4 text-white hover:bg-white/10 transition-colors">
-          <ArrowLeft size={20} />
+        <button onClick={() => setCurrentTab('settings')} className="w-11 h-11 rounded-2xl bg-gradient-to-b from-[#0F1E4A] to-[#040714] border border-blue-500/30 flex items-center justify-center mr-4 text-white hover:bg-blue-500/10 hover:border-blue-500/60 transition-all shadow-[0_0_15px_rgba(59,130,246,0.15)]">
+          <ArrowLeft size={20} className="text-blue-400" />
         </button>
-        <h1 className="text-3xl font-bold text-white tracking-tight">{t.about}</h1>
+        <h1 className="text-3xl font-extrabold text-white tracking-tight">{t.about}</h1>
       </header>
 
-      <div className="bg-[#120F1C] border border-white/5 rounded-[28px] p-8 mb-8 text-center shadow-lg shadow-black/20">
-        <div className="w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-[0_0_20px_rgba(139,92,246,0.4)] overflow-hidden">
-          <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhiP8PtPcn_lYed8oigp1S0lt3qnSwtz0ifjHgxc3iKF01mdzKLRtm5Bq8gjxQd4-j69avgRw_AmPYyonScYLVsoXQ0tYn-AyRfnRGPEaoVcCucFH6M6j_gLA7pbPkbEfP2mv6qEkoI4I07ZDs-b_dnX85SgV4qM2lIekCWSJeilBojFT1x7vpVD5VTR5D2/s1120/45435.png" alt="Robot" className="w-full h-full object-cover rounded-3xl" />
+      <div className="relative overflow-hidden bg-gradient-to-br from-[#0F255C]/35 via-[#0A0E22]/95 to-[#030614] border border-blue-500/35 rounded-[28px] p-8 mb-8 text-center shadow-2xl">
+        <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-blue-500 to-transparent opacity-60" />
+        <div className="w-20 h-20 rounded-3xl bg-gradient-to-tr from-blue-600 to-[#A78BFA] flex items-center justify-center mx-auto mb-6 shadow-[0_0_25px_rgba(59,130,246,0.55)] border border-blue-400/30 p-[2.5px] overflow-hidden">
+          <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhiP8PtPcn_lYed8oigp1S0lt3qnSwtz0ifjHgxc3iKF01mdzKLRtm5Bq8gjxQd4-j69avgRw_AmPYyonScYLVsoXQ0tYn-AyRfnRGPEaoVcCucFH6M6j_gLA7pbPkbEfP2mv6qEkoI4I07ZDs-b_dnX85SgV4qM2lIekCWSJeilBojFT1x7vpVD5VTR5D2/s1120/45435.png" alt="Robot" className="w-full h-full object-cover rounded-[20px]" />
         </div>
-        <h2 className="text-2xl font-bold text-white mb-2">Prompt Builder</h2>
-        <p className="text-gray-400 text-sm mb-6">Version 2.0.0</p>
+        <h2 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-[#A78BFA] via-blue-400 to-cyan-300 mb-2 tracking-tight">Prompt Builder</h2>
+        <p className="text-blue-400 font-bold text-xs uppercase tracking-widest mb-6">Version 2.0.0</p>
         
-        <p className="text-gray-300 text-sm leading-relaxed mb-6">
+        <p className="text-gray-300 text-sm leading-relaxed mb-8 max-w-md mx-auto">
           Prompt Builder is an advanced AI-powered tool designed to help developers and creators craft the perfect prompts for AI coding assistants.
         </p>
 
-        <div className="flex justify-center gap-4 text-gray-500">
-          <a href="#" className="hover:text-purple-400 transition-colors">Terms of Service</a>
+        <div className="flex justify-center gap-4 text-xs font-semibold text-gray-500 uppercase tracking-widest">
+          <a href="#" className="text-blue-400/80 hover:text-purple-300 transition-colors">Terms of Service</a>
           <span>•</span>
-          <a href="#" className="hover:text-purple-400 transition-colors">Privacy Policy</a>
+          <a href="#" className="text-blue-400/80 hover:text-purple-300 transition-colors">Privacy Policy</a>
         </div>
       </div>
 
@@ -2626,27 +2647,56 @@ const AdminPage = ({ setCurrentTab }: any) => {
   return (
     <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="min-h-screen bg-[#05030A] text-white p-4 sm:p-6 md:p-8 pb-32 max-w-lg md:max-w-4xl lg:max-w-6xl mx-auto w-full">
       <header className="flex items-center mb-8 mt-4">
-        <button onClick={() => activeAdminTab === 'home' ? setCurrentTab('home') : setActiveAdminTab('home')} className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center mr-4 text-white hover:bg-white/10 transition-colors">
-          <ArrowLeft size={20} />
+        <button onClick={() => activeAdminTab === 'home' ? setCurrentTab('home') : setActiveAdminTab('home')} className="w-11 h-11 rounded-2xl bg-gradient-to-b from-[#0F1E4A] to-[#040714] border border-blue-500/30 flex items-center justify-center mr-4 text-white hover:bg-blue-500/10 hover:border-blue-500/60 transition-all shadow-[0_0_15px_rgba(59,130,246,0.15)]">
+          <ArrowLeft size={20} className="text-blue-400" />
         </button>
-        <h1 className="text-3xl font-bold text-red-500 flex items-center gap-2 tracking-tight">
+        <h1 className="text-3xl font-extrabold text-red-500 flex items-center gap-2 tracking-tight">
           <Shield size={28} /> Admin Panel
         </h1>
       </header>
 
       {activeAdminTab === 'home' && (
-        <div className="grid grid-cols-1 gap-4">
-          <div onClick={() => setActiveAdminTab('userData')} className="bg-[#120F1C] border border-white/5 hover:border-red-500/30 rounded-2xl p-6 cursor-pointer transition-all shadow-lg">
-            <h2 className="text-xl font-bold text-white mb-2 flex items-center gap-2"><SettingsIcon size={20} className="text-blue-400" /> User Data</h2>
-            <p className="text-gray-400 text-sm">View user logins and daily active sessions.</p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          <div 
+            onClick={() => setActiveAdminTab('userData')} 
+            className="relative overflow-hidden bg-gradient-to-br from-[#0F1E4A]/80 via-[#0C122C]/90 to-[#040714] border border-blue-500/35 hover:border-blue-500/60 rounded-2xl p-6 cursor-pointer transition-all transform hover:-translate-y-1 shadow-2xl flex flex-col justify-between group"
+          >
+            <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-blue-500 to-transparent opacity-60" />
+            <div>
+              <h2 className="text-xl font-black text-white mb-2 flex items-center gap-2"><SettingsIcon size={20} className="text-blue-400 group-hover:animate-spin-slow" /> User Data</h2>
+              <p className="text-blue-300/80 text-xs font-semibold leading-relaxed">View user logins, stored credits and daily active sessions.</p>
+            </div>
+            <div className="mt-6 flex justify-end">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-blue-400 group-hover:text-white transition-colors bg-blue-500/10 px-2.5 py-1 rounded-md">Manage &rarr;</span>
+            </div>
           </div>
-          <div onClick={() => setActiveAdminTab('userActivity')} className="bg-[#120F1C] border border-white/5 hover:border-red-500/30 rounded-2xl p-6 cursor-pointer transition-all shadow-lg">
-            <h2 className="text-xl font-bold text-white mb-2 flex items-center gap-2"><PlayCircle size={20} className="text-green-400" /> User Activity</h2>
-            <p className="text-gray-400 text-sm">Monitor ad impressions and page views.</p>
+          
+          <div 
+            onClick={() => setActiveAdminTab('userActivity')} 
+            className="relative overflow-hidden bg-gradient-to-br from-[#0D2E16]/40 via-[#071F11]/90 to-[#020D08] border border-emerald-500/35 hover:border-emerald-500/60 rounded-2xl p-6 cursor-pointer transition-all transform hover:-translate-y-1 shadow-2xl flex flex-col justify-between group"
+          >
+            <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-emerald-500 to-transparent opacity-60" />
+            <div>
+              <h2 className="text-xl font-black text-white mb-2 flex items-center gap-2"><PlayCircle size={20} className="text-emerald-400 group-hover:scale-110 transition-transform" /> User Activity</h2>
+              <p className="text-emerald-300/80 text-xs font-semibold leading-relaxed">Monitor ad impressions, screen transitions and page views.</p>
+            </div>
+            <div className="mt-6 flex justify-end">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 group-hover:text-white transition-colors bg-emerald-500/10 px-2.5 py-1 rounded-md">Monitor &rarr;</span>
+            </div>
           </div>
-          <div onClick={() => setActiveAdminTab('appUpdate')} className="bg-[#120F1C] border border-white/5 hover:border-red-500/30 rounded-2xl p-6 cursor-pointer transition-all shadow-lg">
-            <h2 className="text-xl font-bold text-white mb-2 flex items-center gap-2"><Check size={20} className="text-yellow-400" /> App Update Popup</h2>
-            <p className="text-gray-400 text-sm">Publish new application updates.</p>
+
+          <div 
+            onClick={() => setActiveAdminTab('appUpdate')} 
+            className="relative overflow-hidden bg-gradient-to-br from-[#2B1B04]/40 via-[#1C1204]/90 to-[#0B0702] border border-amber-500/35 hover:border-amber-500/60 rounded-2xl p-6 cursor-pointer transition-all transform hover:-translate-y-1 shadow-2xl flex flex-col justify-between group"
+          >
+            <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-amber-500 to-transparent opacity-60" />
+            <div>
+              <h2 className="text-xl font-black text-white mb-2 flex items-center gap-2"><Check size={20} className="text-amber-400 group-hover:translate-x-1 transition-transform" /> App Update Popup</h2>
+              <p className="text-amber-300/80 text-xs font-semibold leading-relaxed">Publish new application releases, feature logs and mandatory updates.</p>
+            </div>
+            <div className="mt-6 flex justify-end">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-amber-400 group-hover:text-white transition-colors bg-amber-500/10 px-2.5 py-1 rounded-md">Publish &rarr;</span>
+            </div>
           </div>
         </div>
       )}
@@ -2655,7 +2705,7 @@ const AdminPage = ({ setCurrentTab }: any) => {
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-bold text-white">Detailed User Data</h2>
-            <div className="flex flex-col items-end text-[10px] text-gray-400 bg-white/5 border border-white/10 px-2.5 py-1.5 rounded-xl font-bold gap-1 select-none leading-none">
+            <div className="flex flex-col items-end text-[10px] text-gray-300 bg-gradient-to-br from-[#0F1E4A] to-[#040714] border border-blue-500/30 px-3 py-2 rounded-2xl font-bold gap-1 shadow-sm leading-none">
               <span>👥 Total Users: <strong className="text-blue-400 text-xs font-black">{Object.keys(userData).length}</strong></span>
               <span className="mt-1">🟢 Active Users: <strong className="text-green-500 text-xs font-black">{
                 Object.values(userData).filter((u: any) => {
@@ -2667,42 +2717,43 @@ const AdminPage = ({ setCurrentTab }: any) => {
               }</strong></span>
             </div>
           </div>
-          {sortedUsernames.length === 0 ? <p className="text-gray-500">No user data recorded yet.</p> : null}
+          {sortedUsernames.length === 0 ? <p className="text-gray-500 text-sm">No user data recorded yet.</p> : null}
           {sortedUsernames.map(username => {
             const data = userData[username];
             return (
-              <div key={username} className="bg-[#120F1C] border border-white/5 rounded-xl p-4">
+              <div key={username} className="relative overflow-hidden bg-gradient-to-br from-[#0F1E4A]/30 via-[#0C122C]/90 to-[#040714] border border-blue-500/25 rounded-2xl p-5 shadow-lg">
+                <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-blue-500 to-transparent opacity-40" />
                 <div className="flex justify-between items-center mb-3">
-                  <h3 className="font-bold text-white text-lg">{username}</h3>
+                  <h3 className="font-bold text-white text-lg tracking-tight">{username}</h3>
                   <div className="flex gap-2">
                     {data.credits !== undefined && (
-                      <span className="bg-yellow-500/20 text-yellow-400 px-3 py-1 rounded-full text-xs font-bold">🪙 {data.credits} Credits</span>
+                      <span className="bg-yellow-500/15 text-yellow-400 border border-yellow-500/25 px-3 py-1 rounded-full text-xs font-extrabold shadow-sm">🪙 {data.credits} Credits</span>
                     )}
                     {data.totalAdViews !== undefined && (
-                      <span className="bg-green-500/20 text-green-400 px-3 py-1 rounded-full text-xs font-bold"><PlayCircle size={12} className="inline mr-1"/> {data.totalAdViews} Ad Views</span>
+                      <span className="bg-green-500/15 text-green-400 border border-green-500/25 px-3 py-1 rounded-full text-xs font-extrabold shadow-sm flex items-center gap-1"><PlayCircle size={12}/> {data.totalAdViews} Ads</span>
                     )}
                   </div>
                 </div>
                 
-                <h4 className="text-gray-400 text-xs uppercase tracking-wider mb-2 font-bold">Activity</h4>
-                <div className="space-y-2 mb-4 bg-white/5 p-3 rounded-xl border border-white/5">
-                  {Object.keys(data.opens || {}).length === 0 ? <p className="text-gray-500 text-xs">No app opens recorded.</p> : null}
+                <h4 className="text-blue-400 text-[10px] uppercase tracking-wider mb-2 font-black">Activity History</h4>
+                <div className="space-y-2 mb-4 bg-white/[0.02] p-3 rounded-xl border border-white/5">
+                  {Object.keys(data.opens || {}).length === 0 ? <p className="text-gray-500 text-xs italic">No app opens recorded.</p> : null}
                   {Object.entries(data.opens || {}).map(([date, count]) => (
-                    <div key={date} className="flex justify-between items-center text-sm">
-                      <span className="text-gray-400">{date}</span>
-                      <span className="bg-purple-500/20 text-purple-400 px-3 py-1 rounded-full font-medium">{String(count)} opens</span>
+                    <div key={date} className="flex justify-between items-center text-xs font-semibold">
+                      <span className="text-gray-400 font-mono">{date}</span>
+                      <span className="bg-purple-500/15 text-purple-400 border border-purple-500/20 px-2 py-0.5 rounded-full">{String(count)} opens</span>
                     </div>
                   ))}
                 </div>
 
                 {data.history && data.history.length > 0 && (
                   <>
-                    <h4 className="text-gray-400 text-xs uppercase tracking-wider mb-2 font-bold">Generated Prompts ({data.history.length})</h4>
+                    <h4 className="text-purple-400 text-[10px] uppercase tracking-wider mb-2 font-black">Generated Prompts ({data.history.length})</h4>
                     <div className="space-y-2 max-h-40 overflow-y-auto hide-scrollbar">
                       {data.history.map((h: any) => (
-                        <div key={h.id} className="bg-white/5 p-3 rounded-lg border border-white/5">
-                          <p className="text-sm font-semibold text-white truncate">{h.topic}</p>
-                          <p className="text-xs text-gray-500 line-clamp-1 mt-1">{h.prompt}</p>
+                        <div key={h.id} className="bg-white/[0.02] p-3 rounded-lg border border-white/5 hover:bg-white/5 transition-colors">
+                          <p className="text-xs font-bold text-white truncate">{h.topic}</p>
+                          <p className="text-[10px] text-gray-400 line-clamp-1 mt-1 leading-relaxed">{h.prompt}</p>
                         </div>
                       ))}
                     </div>
@@ -2716,10 +2767,11 @@ const AdminPage = ({ setCurrentTab }: any) => {
 
       {activeAdminTab === 'userActivity' && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
-          <h2 className="text-xl font-bold text-white mb-4">User Activity</h2>
-          <div className="bg-[#120F1C] border border-white/5 rounded-2xl p-6 flex items-center gap-6">
-            <div className="w-16 h-16 rounded-full bg-green-500/10 flex items-center justify-center">
-              <PlayCircle size={32} className="text-green-500" />
+          <h2 className="text-xl font-bold text-white mb-4">User Activity Analytics</h2>
+          <div className="relative overflow-hidden bg-gradient-to-r from-[#0D2E16]/40 via-[#071F11]/90 to-[#020D08] border border-emerald-500/35 rounded-2xl p-6 flex items-center gap-6 shadow-xl">
+            <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-emerald-500 to-transparent opacity-60" />
+            <div className="w-16 h-16 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center">
+              <PlayCircle size={32} className="text-emerald-500" />
             </div>
             <div>
               <p className="text-gray-400 text-sm mb-1">Total Ad Impressions</p>
@@ -2728,7 +2780,7 @@ const AdminPage = ({ setCurrentTab }: any) => {
           </div>
 
           <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">All Users Details</h3>
+            <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest pl-2">All Users Details</h3>
             {sortedUsernames.length === 0 ? (
               <p className="text-gray-500 text-sm">No user activity recorded yet.</p>
             ) : (
@@ -2742,33 +2794,32 @@ const AdminPage = ({ setCurrentTab }: any) => {
                 );
 
                 return (
-                  <div key={username} className="bg-[#120F1C] border border-white/5 rounded-2xl p-4 space-y-4 shadow-lg">
-                    {/* User Name & Active Status */}
+                  <div key={username} className="relative overflow-hidden bg-gradient-to-br from-[#0F1E4A]/30 via-[#0C122C]/90 to-[#040714] border border-blue-500/25 rounded-2xl p-5 space-y-4 shadow-xl">
+                    <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-blue-500 to-transparent opacity-40" />
                     <div className="flex justify-between items-start">
                       <div>
-                        <h4 className="font-bold text-white text-base">{username}</h4>
-                        <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                          <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider flex items-center gap-1 ${
+                        <h4 className="font-bold text-white text-base tracking-tight">{username}</h4>
+                        <div className="flex items-center gap-2 mt-2 flex-wrap">
+                          <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider flex items-center gap-1 ${
                             isRecentActive 
                               ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' 
                               : 'bg-white/5 text-gray-400 border border-white/10'
                           }`}>
-                            <span className={`w-1.5 h-1.5 rounded-full ${isRecentActive ? 'bg-emerald-400' : 'bg-gray-400'}`} />
+                            <span className={`w-1.5 h-1.5 rounded-full ${isRecentActive ? 'bg-emerald-400 animate-pulse' : 'bg-gray-400'}`} />
                             {isRecentActive ? 'Active' : 'Inactive'}
                           </span>
-                          <span className="bg-green-500/10 text-green-400 border border-green-500/20 px-2 py-0.5 rounded-full text-[9px] font-bold flex items-center gap-1">
+                          <span className="bg-green-500/10 text-green-400 border border-green-500/20 px-2.5 py-0.5 rounded-full text-[9px] font-bold flex items-center gap-1">
                             <PlayCircle size={10} /> {data.totalAdViews || 0} Ads Watched
                           </span>
                         </div>
                       </div>
                     </div>
 
-                    {/* Open History (when user data app open all data) */}
                     <div>
-                      <h5 className="text-gray-400 text-[10px] font-bold uppercase tracking-wider mb-2">
+                      <h5 className="text-blue-400 text-[10px] font-bold uppercase tracking-wider mb-2">
                         📅 Open History
                       </h5>
-                      <div className="bg-white/5 border border-white/5 p-2.5 rounded-xl max-h-32 overflow-y-auto space-y-1 hide-scrollbar">
+                      <div className="bg-white/[0.02] border border-white/5 p-3 rounded-xl max-h-32 overflow-y-auto space-y-1.5 hide-scrollbar">
                         {Object.keys(data.opens || {}).length === 0 ? (
                           <p className="text-gray-500 text-xs italic">No app open history</p>
                         ) : (
@@ -2777,7 +2828,7 @@ const AdminPage = ({ setCurrentTab }: any) => {
                             .map(([date, count]) => (
                               <div key={date} className="flex justify-between items-center text-xs">
                                 <span className="text-gray-400 font-mono">{date}</span>
-                                <span className="text-purple-400 font-semibold bg-purple-500/10 px-2 py-0.5 rounded-full text-[10px]">
+                                <span className="text-purple-400 font-bold bg-purple-500/10 border border-purple-500/20 px-2.5 py-0.5 rounded-full text-[10px]">
                                   {count} opens
                                 </span>
                               </div>
@@ -2786,21 +2837,20 @@ const AdminPage = ({ setCurrentTab }: any) => {
                       </div>
                     </div>
 
-                    {/* Build History (whose built they) */}
                     <div>
-                      <h5 className="text-gray-400 text-[10px] font-bold uppercase tracking-wider mb-2">
+                      <h5 className="text-purple-400 text-[10px] font-bold uppercase tracking-wider mb-2">
                         ⚡ Build History ({data.history?.length || 0})
                       </h5>
                       {data.history && data.history.length > 0 ? (
                         <div className="space-y-2 max-h-40 overflow-y-auto hide-scrollbar">
                           {data.history.map((h: any, idx: number) => (
-                            <div key={h.id || idx} className="bg-white/5 border border-white/5 p-2.5 rounded-xl space-y-1">
+                            <div key={h.id || idx} className="bg-white/[0.02] border border-white/5 p-3 rounded-xl space-y-1.5">
                               <div className="flex justify-between items-start gap-2">
-                                <span className="text-xs font-semibold text-white truncate max-w-[200px]">
+                                <span className="text-xs font-bold text-white truncate max-w-[200px]">
                                   {h.topic || 'Untitled'}
                                 </span>
                                 {h.category && (
-                                  <span className="text-[8px] bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded font-mono uppercase font-bold">
+                                  <span className="text-[8px] bg-blue-500/15 text-blue-400 border border-blue-500/25 px-2 py-0.5 rounded font-mono uppercase font-black">
                                     {h.category}
                                   </span>
                                 )}
@@ -2812,7 +2862,7 @@ const AdminPage = ({ setCurrentTab }: any) => {
                           ))}
                         </div>
                       ) : (
-                        <p className="text-gray-500 text-xs italic bg-white/5 border border-white/5 p-2.5 rounded-xl">
+                        <p className="text-gray-500 text-xs italic bg-white/[0.02] border border-white/5 p-3 rounded-xl">
                           No built prompts history
                         </p>
                       )}
@@ -2828,24 +2878,25 @@ const AdminPage = ({ setCurrentTab }: any) => {
       {activeAdminTab === 'appUpdate' && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold text-white">Publish Update</h2>
-            <button onClick={clearUpdate} className="text-xs bg-red-500/10 text-red-400 px-3 py-1.5 rounded-lg border border-red-500/20 hover:bg-red-500/20">Clear Active Update</button>
+            <h2 className="text-xl font-bold text-white tracking-tight">Publish System Update</h2>
+            <button onClick={clearUpdate} className="text-[11px] font-bold bg-red-500/10 text-red-400 px-3.5 py-1.5 rounded-xl border border-red-500/20 hover:bg-red-500/20 active:scale-95 transition-all">Clear Active Update</button>
           </div>
-          <div className="space-y-4 bg-[#120F1C] border border-white/5 rounded-2xl p-6">
+          <div className="relative overflow-hidden space-y-4 bg-gradient-to-br from-[#1E1102]/60 via-[#120B02]/90 to-[#040200] border border-amber-500/25 rounded-2xl p-6 shadow-2xl">
+            <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-amber-500 to-transparent opacity-40" />
             <div>
-              <label className="block text-gray-400 text-sm font-medium mb-1.5">Update Title</label>
-              <input value={updateForm.title} onChange={e => setUpdateForm({...updateForm, title: e.target.value})} placeholder="e.g. Version 2.1 is here!" className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:ring-1 focus:ring-red-500" />
+              <label className="block text-amber-500 text-[10px] uppercase font-black tracking-widest mb-1.5">Update Title</label>
+              <input value={updateForm.title} onChange={e => setUpdateForm({...updateForm, title: e.target.value})} placeholder="e.g. Version 2.1 is here!" className="w-full bg-white/[0.03] border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/30 transition-all font-semibold" />
             </div>
             <div>
-              <label className="block text-gray-400 text-sm font-medium mb-1.5">New Features</label>
-              <textarea value={updateForm.features} onChange={e => setUpdateForm({...updateForm, features: e.target.value})} placeholder="What's new in this version?" className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:ring-1 focus:ring-red-500 resize-none h-24" />
+              <label className="block text-amber-500 text-[10px] uppercase font-black tracking-widest mb-1.5">New Features / Changelog</label>
+              <textarea value={updateForm.features} onChange={e => setUpdateForm({...updateForm, features: e.target.value})} placeholder="What's new in this version?" className="w-full bg-white/[0.03] border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/30 transition-all resize-none h-24 font-medium leading-relaxed" />
             </div>
             <div>
-              <label className="block text-gray-400 text-sm font-medium mb-1.5">Download Link</label>
-              <input value={updateForm.link} onChange={e => setUpdateForm({...updateForm, link: e.target.value})} placeholder="https://..." className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:ring-1 focus:ring-red-500" />
+              <label className="block text-amber-500 text-[10px] uppercase font-black tracking-widest mb-1.5">Download Link / Action URL</label>
+              <input value={updateForm.link} onChange={e => setUpdateForm({...updateForm, link: e.target.value})} placeholder="https://..." className="w-full bg-white/[0.03] border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/30 transition-all font-semibold" />
             </div>
-            <button onClick={handleUpdatePublish} className="w-full py-4 mt-2 rounded-xl bg-red-500 hover:bg-red-600 text-white font-bold transition-colors shadow-lg shadow-red-500/20">
-              Publish Update to Users
+            <button onClick={handleUpdatePublish} className="w-full py-4 mt-2 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 text-white font-extrabold text-sm transition-all shadow-lg shadow-amber-500/10 active:scale-[0.99] active:brightness-95">
+              Publish Update Notification to Users
             </button>
           </div>
         </motion.div>
